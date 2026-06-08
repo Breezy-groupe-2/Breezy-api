@@ -66,10 +66,12 @@ src/
 
 - Use Git Flow:
   - `main` contains stable submitted/releasable work.
-  - `develop` contains integrated ongoing work.
+  - `dev` contains integrated ongoing work.
   - `feature/*` branches contain individual features or tasks.
   - `release/*` branches prepare project milestones.
   - `hotfix/*` branches fix urgent issues from `main`.
+- Feature pull requests target `dev`; `dev` is merged into `main` only for stable delivery checkpoints.
+- Prefer squash merges for feature pull requests and keep each pull request focused on one issue or one small feature slice.
 - Use Conventional Commits for commit messages: `<type>(<scope>): <description>`.
 - Use Commitizen to guide commit message creation.
 - Use Commitlint with Husky to enforce Conventional Commit messages.
