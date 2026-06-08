@@ -26,9 +26,10 @@ const register = async ({ username, email, password }) => {
   };
 };
 
-const login = async ({ email, password: _password }) => {
+const login = async ({ email, password }) => {
   const user = await User.findOne({ email });
-  if (!user) {
+  const valid = user && (await bcrypt.compare(password, user.passwordHash));
+  if (!valid) {
     const err = new Error('Invalid credentials');
     err.status = 401;
     throw err;
