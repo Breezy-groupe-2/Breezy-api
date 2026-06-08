@@ -26,4 +26,14 @@ const register = async ({ username, email, password }) => {
   };
 };
 
-module.exports = { register };
+const login = async ({ email, password: _password }) => {
+  const user = await User.findOne({ email });
+  if (!user) {
+    const err = new Error('Invalid credentials');
+    err.status = 401;
+    throw err;
+  }
+  return { id: user._id, username: user.username, email: user.email, role: user.role };
+};
+
+module.exports = { register, login };
