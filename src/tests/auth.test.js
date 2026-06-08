@@ -20,6 +20,8 @@ afterEach(async () => {
   await User.deleteMany({});
 });
 
+process.env.JWT_SECRET = 'test_secret';
+
 const validPayload = {
   username: 'testuser',
   email: 'test@example.com',
@@ -78,5 +80,69 @@ describe('POST /api/v1/auth/register', () => {
       .send({ ...validPayload, email: 'other@example.com' });
 
     expect(res.status).toBe(409);
+  });
+});
+
+describe('POST /api/v1/auth/login', () => {
+  beforeEach(async () => {
+    await request(app).post('/api/v1/auth/register').send(validPayload);
+  });
+
+  it('returns 200 and a JWT token on valid credentials', async () => {
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: validPayload.email, password: validPayload.password });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('token');
+    expect(res.body.user).toMatchObject({ email: validPayload.email, role: 'user' });
+    expect(res.body.user).not.toHaveProperty('passwordHash');
+  });
+
+  it('returns 401 on wrong password', async () => {
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: validPayload.email, password: 'WrongPass1' });
+
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 401 for unknown email', async () => {
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'nobody@example.com', password: validPayload.password });
+
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('GET /api/v1/auth/me', () => {
+  let token;
+
+  beforeEach(async () => {
+    await request(app).post('/api/v1/auth/register').send(validPayload);
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: validPayload.email, password: validPayload.password });
+    token = res.body.token;
+  });
+
+  it('returns 200 and current user when authenticated', async () => {
+    const res = await request(app).get('/api/v1/auth/me').set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ username: validPayload.username, email: validPayload.email });
+  });
+
+  it('returns 401 when no token is provided', async () => {
+    const res = await request(app).get('/api/v1/auth/me');
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 401 on invalid token', async () => {
+    const res = await request(app)
+      .get('/api/v1/auth/me')
+      .set('Authorization', 'Bearer invalidtoken');
+    expect(res.status).toBe(401);
   });
 });
