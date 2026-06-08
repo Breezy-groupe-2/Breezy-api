@@ -1,0 +1,30 @@
+services:
+  api:
+    build:
+      context: .
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: ${PORT:-4000}
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongodb:27017/breezy}
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+    ports:
+      - '${PORT:-4000}:4000'
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+  mongodb:
+    image: mongo:8
+    restart: unless-stopped
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongodb-data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--quiet', '--eval', "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mongodb-data:
