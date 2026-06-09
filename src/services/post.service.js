@@ -12,6 +12,11 @@ const updatePost = async ({ postId, content, authorId }) => {
     err.status = 404;
     throw err;
   }
+  if (post.author.toString() !== authorId.toString()) {
+    const err = new Error('Forbidden');
+    err.status = 403;
+    throw err;
+  }
   post.content = content;
   await post.save();
   return { id: post._id, content: post.content, author: post.author, updatedAt: post.updatedAt };
