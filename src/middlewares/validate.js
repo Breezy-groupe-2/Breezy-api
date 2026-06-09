@@ -18,6 +18,13 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+const createPostSchema = z.object({
+  content: z
+    .string()
+    .min(1, 'Content is required')
+    .max(280, 'Content must be at most 280 characters'),
+});
+
 const validate = (schema) => (req, res, next) => {
   const result = schema.safeParse(req.body);
   if (!result.success) {
@@ -30,4 +37,4 @@ const validate = (schema) => (req, res, next) => {
   next();
 };
 
-module.exports = { validate, registerSchema, loginSchema };
+module.exports = { validate, registerSchema, loginSchema, createPostSchema };
