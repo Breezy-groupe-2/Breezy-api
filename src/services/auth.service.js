@@ -7,6 +7,13 @@ const signToken = (user) =>
     expiresIn: process.env.JWT_EXPIRES_IN || '15m',
   });
 
+const toPublicUser = (user) => ({
+  id: user._id,
+  username: user.username,
+  email: user.email,
+  role: user.role,
+});
+
 const register = async ({ username, email, password }) => {
   const passwordHash = await bcrypt.hash(password, 12);
 
@@ -24,11 +31,8 @@ const register = async ({ username, email, password }) => {
   }
 
   return {
-    id: user._id,
-    username: user.username,
-    email: user.email,
-    role: user.role,
-    createdAt: user.createdAt,
+    token: signToken(user),
+    user: { ...toPublicUser(user), createdAt: user.createdAt },
   };
 };
 
@@ -41,7 +45,7 @@ const login = async ({ email, password }) => {
     throw err;
   }
   const token = signToken(user);
-  return { token, user: { id: user._id, username: user.username, email: user.email, role: user.role } };
+  return { token, user: toPublicUser(user) };
 };
 
 const getMe = async (userId) => {
@@ -51,7 +55,7 @@ const getMe = async (userId) => {
     err.status = 404;
     throw err;
   }
-  return { id: user._id, username: user.username, email: user.email, role: user.role };
+  return toPublicUser(user);
 };
 
 module.exports = { register, login, getMe };

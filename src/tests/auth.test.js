@@ -33,8 +33,13 @@ describe('POST /api/v1/auth/register', () => {
     const res = await request(app).post('/api/v1/auth/register').send(validPayload);
 
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ username: 'testuser', email: 'test@example.com', role: 'user' });
-    expect(res.body).not.toHaveProperty('passwordHash');
+    expect(res.body).toHaveProperty('token');
+    expect(res.body.user).toMatchObject({
+      username: 'testuser',
+      email: 'test@example.com',
+      role: 'user',
+    });
+    expect(res.body.user).not.toHaveProperty('passwordHash');
   });
 
   it('returns 400 when username is too short', async () => {
@@ -129,6 +134,15 @@ describe('GET /api/v1/auth/me', () => {
 
   it('returns 200 and current user when authenticated', async () => {
     const res = await request(app).get('/api/v1/auth/me').set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ username: validPayload.username, email: validPayload.email });
+  });
+
+  it('returns 200 for the users/me alias used by the web client', async () => {
+    const res = await request(app)
+      .get('/api/v1/users/me')
+      .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ username: validPayload.username, email: validPayload.email });
