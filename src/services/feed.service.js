@@ -8,7 +8,7 @@ const getFeed = async (userId) => {
     err.status = 404;
     throw err;
   }
-  const posts = await Post.find()
+  const posts = await Post.find({ author: { $in: user.following } })
     .sort({ createdAt: -1 })
     .populate('author', 'username');
   return posts.map((p) => ({ id: p._id, content: p.content, author: p.author, createdAt: p.createdAt }));
