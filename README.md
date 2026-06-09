@@ -2,7 +2,7 @@
 
 Breezy API is the back-end prototype for Breezy, a lightweight social network inspired by Twitter/X.
 
-This repository is currently in project setup mode. The application source code has not been scaffolded yet.
+This repository contains the Breezy API Express application scaffold.
 
 ## Runtime Configuration
 
@@ -23,7 +23,7 @@ Required variables:
 
 ## Docker
 
-The API image and local MongoDB service are defined for the future Express app scaffold.
+The API image and local MongoDB service are defined for local development.
 
 Build the API image:
 
@@ -37,7 +37,7 @@ Start the API and MongoDB stack:
 docker compose up --build
 ```
 
-The API container expects `src/server.js`, which will be added when the Express application is scaffolded.
+The API container starts `src/server.js`.
 
 ## Tooling Decisions
 
