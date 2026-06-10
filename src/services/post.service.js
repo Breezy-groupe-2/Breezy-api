@@ -1,8 +1,9 @@
 const Post = require('../models/post.model');
+const Like = require('../models/like.model');
 
 const createPost = async ({ content, authorId }) => {
   const post = await Post.create({ content, author: authorId });
-  return { id: post._id, content: post.content, author: post.author, createdAt: post.createdAt };
+  return { id: post._id, content: post.content, author: post.author, createdAt: post.createdAt, likeCount: 0 };
 };
 
 const updatePost = async ({ postId, content, authorId }) => {
@@ -19,7 +20,8 @@ const updatePost = async ({ postId, content, authorId }) => {
   }
   post.content = content;
   await post.save();
-  return { id: post._id, content: post.content, author: post.author, updatedAt: post.updatedAt };
+  const likeCount = await Like.countDocuments({ post: post._id });
+  return { id: post._id, content: post.content, author: post.author, updatedAt: post.updatedAt, likeCount };
 };
 
 module.exports = { createPost, updatePost };
