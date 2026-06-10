@@ -9,5 +9,6 @@ const router = Router();
 router.post('/', authenticate, validate(createPostSchema), createPost);
 router.put('/:id', authenticate, validate(createPostSchema), updatePost);
 router.post('/:id/like', authenticate, likePost);
+router.delete('/:id/like', authenticate, unlikePost);
 
 module.exports = router;
