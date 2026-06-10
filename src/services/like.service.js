@@ -8,7 +8,16 @@ const likePost = async ({ postId, userId }) => {
     err.status = 404;
     throw err;
   }
-  await Like.create({ post: postId, user: userId });
+  try {
+    await Like.create({ post: postId, user: userId });
+  } catch (err) {
+    if (err.code === 11000) {
+      const conflict = new Error('Already liked');
+      conflict.status = 409;
+      throw conflict;
+    }
+    throw err;
+  }
   const likeCount = await Like.countDocuments({ post: postId });
   return { postId, likeCount };
 };
