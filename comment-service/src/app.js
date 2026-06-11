@@ -10,7 +10,11 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'Comment Service is running' });
 });
 
-// Routes will be added here
-// app.use('/api/comments', commentRoutes);
+const commentRoutes = require('./routes/comment.routes');
+app.use('/api/posts/:postId/comments', commentRoutes);
+
+app.use((err, _req, res, _next) => {
+  res.status(err.status ?? 500).json({ error: err.message ?? 'Internal server error' });
+});
 
 module.exports = app;
