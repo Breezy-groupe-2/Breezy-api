@@ -31,4 +31,13 @@ const updatePost = async (req, res, next) => {
   }
 };
 
-module.exports = { createPost, updatePost, getPostsByUser };
+const getOwnPosts = async (req, res, next) => {
+  try {
+    const posts = await postService.getPostsByUser(req.user.sub);
+    res.status(200).json(posts);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { createPost, updatePost, getPostsByUser, getOwnPosts };
