@@ -140,9 +140,7 @@ describe('GET /api/v1/auth/me', () => {
   });
 
   it('returns 200 for the users/me alias used by the web client', async () => {
-    const res = await request(app)
-      .get('/api/v1/users/me')
-      .set('Authorization', `Bearer ${token}`);
+    const res = await request(app).get('/api/v1/users/me').set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ username: validPayload.username, email: validPayload.email });
