@@ -30,6 +30,8 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    bio: { type: String, maxlength: 160, default: '' },
+    avatar: { type: String, default: '' },
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   },
   { timestamps: true }

@@ -4,12 +4,14 @@ const postRoutes = require('./routes/post/post.routes');
 const feedRoutes = require('./routes/feed/feed.routes');
 const { me } = require('./controllers/auth.controller');
 const { authenticate } = require('./middlewares/authenticate');
+const profileRoutes = require('./routes/user/user.profile.routes');
 
 const app = express();
 
 app.use(express.json());
 app.use('/api/v1/auth', userRoutes);
 app.get('/api/v1/users/me', authenticate, me);
+app.use('/api/v1/users', profileRoutes);
 app.use('/api/v1/posts', postRoutes);
 app.use('/api/v1/feed', feedRoutes);
 
