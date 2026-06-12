@@ -1,7 +1,21 @@
 const Follow = require('../models/follow.model');
 
 const followUser = async ({ followerId, followingId }) => {
-  await Follow.create({ follower: followerId, following: followingId });
+  if (followerId.toString() === followingId.toString()) {
+    const err = new Error('Cannot follow yourself');
+    err.status = 400;
+    throw err;
+  }
+  try {
+    await Follow.create({ follower: followerId, following: followingId });
+  } catch (err) {
+    if (err.code === 11000) {
+      const conflict = new Error('Already following');
+      conflict.status = 409;
+      throw conflict;
+    }
+    throw err;
+  }
   return { followerId, followingId };
 };
 
