@@ -25,6 +25,11 @@ const createPostSchema = z.object({
     .max(280, 'Content must be at most 280 characters'),
 });
 
+const updateProfileSchema = z.object({
+  bio: z.string().max(160, 'Bio must be at most 160 characters').optional(),
+  avatar: z.string().url('Avatar must be a valid URL').optional(),
+});
+
 const validate = (schema) => (req, res, next) => {
   const result = schema.safeParse(req.body);
   if (!result.success) {
@@ -37,4 +42,4 @@ const validate = (schema) => (req, res, next) => {
   next();
 };
 
-module.exports = { validate, registerSchema, loginSchema, createPostSchema };
+module.exports = { validate, registerSchema, loginSchema, createPostSchema, updateProfileSchema };
