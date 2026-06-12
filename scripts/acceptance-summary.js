@@ -5,9 +5,29 @@ const os = require('node:os');
 const path = require('node:path');
 
 const repoRoot = path.resolve(__dirname, '..');
+const invokingPackageDir = process.env.npm_package_json
+  ? path.dirname(process.env.npm_package_json)
+  : process.cwd();
 const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'breezy-acceptance-'));
 const outputFile = path.join(outputDir, 'results.json');
-const vitestBin = path.join(repoRoot, 'node_modules', 'vitest', 'vitest.mjs');
+
+let vitestBin;
+try {
+  const vitestEntry = require.resolve('vitest', {
+    paths: [invokingPackageDir, repoRoot],
+  });
+  vitestBin = path.join(path.dirname(vitestEntry), 'vitest.mjs');
+} catch {
+  console.error(
+    'Unable to resolve Vitest. Run npm install in the package that owns test:acceptance.'
+  );
+  process.exit(1);
+}
+
+const cliArgs = process.argv.slice(2);
+const includeOptional =
+  process.env.ACCEPTANCE_INCLUDE_OPTIONAL === 'true' || cliArgs.includes('--include-optional');
+const passthroughArgs = cliArgs.filter((arg) => arg !== '--include-optional');
 
 const featureNames = {
   Fx1: 'User account creation with validation',
@@ -25,7 +45,7 @@ const featureNames = {
   Fx23: 'Custom theme',
 };
 
-const orderedFeatures = [
+const requiredFeatures = [
   'Fx1',
   'Fx2',
   'Fx3',
@@ -37,9 +57,12 @@ const orderedFeatures = [
   'Fx9',
   'Fx10',
   'Fx11',
-  'Fx21',
-  'Fx23',
 ];
+const optionalFeatures = ['Fx21', 'Fx23'];
+const orderedFeatures = includeOptional
+  ? [...requiredFeatures, ...optionalFeatures]
+  : requiredFeatures;
+const requiredFeaturePattern = '\\bFx(?:[1-9]|10|11)\\b';
 
 const vitestArgs = [
   vitestBin,
@@ -50,7 +73,8 @@ const vitestArgs = [
   '--outputFile',
   outputFile,
   '--passWithNoTests',
-  ...process.argv.slice(2),
+  ...(includeOptional ? [] : ['--testNamePattern', requiredFeaturePattern]),
+  ...passthroughArgs,
 ];
 
 const result = spawnSync(process.execPath, vitestArgs, {
@@ -125,6 +149,11 @@ for (const fileResult of report.testResults ?? []) {
 const failingFeatures = [];
 
 console.log('\nBreezy acceptance feature status\n');
+if (!includeOptional) {
+  console.log(
+    `Optional features skipped: ${optionalFeatures.join(', ')}. Pass --include-optional or set ACCEPTANCE_INCLUDE_OPTIONAL=true to include them.\n`
+  );
+}
 for (const featureId of orderedFeatures) {
   const feature = featureResults.get(featureId);
   const name = featureNames[featureId];

@@ -16,7 +16,7 @@ const {
 
 setupAcceptanceDb();
 
-describe.sequential('Breezy acceptance contract Fx1-Fx23', () => {
+describe.sequential('Breezy acceptance contract', () => {
   describe('Fx1 - user account creation with validation', () => {
     it('creates a user account, returns a JWT, and never leaks password fields', async () => {
       const payload = userPayload('register');
@@ -190,9 +190,9 @@ describe.sequential('Breezy acceptance contract Fx1-Fx23', () => {
       const reader = await registerAndLogin('reader');
       const followed = await registerAndLogin('followed');
       const stranger = await registerAndLogin('stranger');
-      await models.User.findByIdAndUpdate(reader.user.id, {
-        following: [followed.user.id],
-      });
+      const follow = await request(app)
+        .post(`/api/v1/users/${followed.user.id}/follow`)
+        .set(authHeader(reader.token));
 
       await createPost(followed.token, 'Older followed post');
       await createPost(stranger.token, 'Stranger post');
@@ -200,6 +200,7 @@ describe.sequential('Breezy acceptance contract Fx1-Fx23', () => {
 
       const res = await request(app).get('/api/v1/feed').set(authHeader(reader.token));
 
+      expect(follow.status).toBe(200);
       expect(res.status).toBe(200);
       expect(res.body.map((post) => post.content)).toEqual([
         'Newer followed post',
@@ -487,10 +488,15 @@ describe.sequential('Breezy acceptance contract Fx1-Fx23', () => {
     });
 
     it('allows moderators to suspend users and blocks regular users from moderation actions', async () => {
-      const moderator = await registerAndLogin('moderator');
+      const moderatorPayload = userPayload('moderator');
+      const moderatorRegister = await registerUser(moderatorPayload);
       const regular = await registerAndLogin('regularmoderator');
       const target = await registerAndLogin('moderationtarget');
-      await models.User.findByIdAndUpdate(moderator.user.id, { role: 'moderator' });
+      await models.User.findByIdAndUpdate(moderatorRegister.body.user.id, { role: 'moderator' });
+      const moderatorLogin = await loginUser({
+        email: moderatorPayload.email,
+        password: moderatorPayload.password,
+      });
 
       const forbidden = await request(app)
         .patch(`/api/v1/users/${target.user.id}/moderation`)
@@ -498,7 +504,7 @@ describe.sequential('Breezy acceptance contract Fx1-Fx23', () => {
         .send({ status: 'suspended', reason: 'Rules violation' });
       const suspended = await request(app)
         .patch(`/api/v1/users/${target.user.id}/moderation`)
-        .set(authHeader(moderator.token))
+        .set(authHeader(moderatorLogin.body.token))
         .send({ status: 'suspended', reason: 'Rules violation' });
 
       expectJsonError(forbidden, 403);
@@ -548,15 +554,20 @@ describe.sequential('Breezy acceptance contract Fx1-Fx23', () => {
       const reader = await registerAndLogin('moderationfeedreader');
       const activeAuthor = await registerAndLogin('activeauthor');
       const suspendedAuthor = await registerAndLogin('suspendedauthor');
-      await models.User.findByIdAndUpdate(reader.user.id, {
-        following: [activeAuthor.user.id, suspendedAuthor.user.id],
-      });
+      const followActiveAuthor = await request(app)
+        .post(`/api/v1/users/${activeAuthor.user.id}/follow`)
+        .set(authHeader(reader.token));
+      const followSuspendedAuthor = await request(app)
+        .post(`/api/v1/users/${suspendedAuthor.user.id}/follow`)
+        .set(authHeader(reader.token));
       await createPost(activeAuthor.token, 'Active author post');
       await createPost(suspendedAuthor.token, 'Suspended author post');
       await models.User.findByIdAndUpdate(suspendedAuthor.user.id, { isActive: false });
 
       const feed = await request(app).get('/api/v1/feed').set(authHeader(reader.token));
 
+      expect(followActiveAuthor.status).toBe(200);
+      expect(followSuspendedAuthor.status).toBe(200);
       expect(feed.status).toBe(200);
       expect(feed.body.map((post) => post.content)).toEqual(['Active author post']);
     });
