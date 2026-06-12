@@ -53,6 +53,7 @@ services:
       - post-service
       - comment-service
       - feed-service
+      - swagger-service
     networks:
       - breezy-network
     restart: unless-stopped
@@ -146,6 +147,21 @@ services:
       MONGO_INITDB_DATABASE: breezy_feeds
     volumes:
       - feed_db_data:/data/db
+    networks:
+      - breezy-network
+  # 📖 Swagger Documentation Service
+  swagger-service:
+    build:
+      context: ./swagger-service
+      dockerfile: Dockerfile
+    container_name: breezy-swagger-service
+    ports:
+      - '3005:3005'
+    environment:
+      NODE_ENV: production
+      PORT: 3005
+    volumes:
+      - ./swagger:/app/swagger:ro
     networks:
       - breezy-network
     restart: unless-stopped

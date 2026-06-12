@@ -12,7 +12,12 @@ const getFeed = async (userId, { limit = 20 } = {}) => {
     .sort({ createdAt: -1 })
     .limit(limit)
     .populate('author', 'username');
-  return posts.map((p) => ({ id: p._id, content: p.content, author: p.author, createdAt: p.createdAt }));
+  return posts.map((p) => ({
+    id: p._id,
+    content: p.content,
+    author: p.author,
+    createdAt: p.createdAt,
+  }));
 };
 
 module.exports = { getFeed };
