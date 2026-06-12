@@ -513,6 +513,10 @@ describe.sequential('Breezy acceptance contract Fx1-Fx23', () => {
       const banned = await registerAndLogin('banned');
       const author = await registerAndLogin('banpostauthor');
       const post = await createPost(author.token, 'Post protected from banned user actions');
+      const comment = await request(app)
+        .post(`/api/v1/posts/${post.body.id}/comments`)
+        .set(authHeader(author.token))
+        .send({ content: 'Active user comment' });
       await models.User.findByIdAndUpdate(banned.user.id, { isActive: false });
 
       const postAttempt = await createPost(banned.token, 'Should not publish');
@@ -523,6 +527,10 @@ describe.sequential('Breezy acceptance contract Fx1-Fx23', () => {
         .post(`/api/v1/posts/${post.body.id}/comments`)
         .set(authHeader(banned.token))
         .send({ content: 'Should not comment' });
+      const replyAttempt = await request(app)
+        .post(`/api/v1/comments/${comment.body.id}/replies`)
+        .set(authHeader(banned.token))
+        .send({ content: 'Should not reply' });
       const followAttempt = await request(app)
         .post(`/api/v1/users/${author.user.id}/follow`)
         .set(authHeader(banned.token));
@@ -531,6 +539,7 @@ describe.sequential('Breezy acceptance contract Fx1-Fx23', () => {
       expectJsonError(postAttempt, 403);
       expectJsonError(likeAttempt, 403);
       expectJsonError(commentAttempt, 403);
+      expectJsonError(replyAttempt, 403);
       expectJsonError(followAttempt, 403);
       expectJsonError(feedAttempt, 403);
     });
@@ -542,10 +551,9 @@ describe.sequential('Breezy acceptance contract Fx1-Fx23', () => {
       await models.User.findByIdAndUpdate(reader.user.id, {
         following: [activeAuthor.user.id, suspendedAuthor.user.id],
       });
-      await models.User.findByIdAndUpdate(suspendedAuthor.user.id, { isActive: false });
-
       await createPost(activeAuthor.token, 'Active author post');
       await createPost(suspendedAuthor.token, 'Suspended author post');
+      await models.User.findByIdAndUpdate(suspendedAuthor.user.id, { isActive: false });
 
       const feed = await request(app).get('/api/v1/feed').set(authHeader(reader.token));
 

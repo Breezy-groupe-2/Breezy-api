@@ -65,6 +65,20 @@ if (!fs.existsSync(outputFile)) {
 }
 
 const report = JSON.parse(fs.readFileSync(outputFile, 'utf8'));
+const runnerFailed = result.status !== 0;
+const runnerOutput = [result.stdout, result.stderr].filter(Boolean).join('\n').trim();
+const unhandledErrors = [...(report.unhandledErrors ?? []), ...(report.errors ?? [])].filter(
+  Boolean
+);
+
+const formatRunnerError = (error) => {
+  if (typeof error === 'string') {
+    return error;
+  }
+
+  return error.message ?? error.stack ?? JSON.stringify(error);
+};
+
 const featureResults = new Map(
   orderedFeatures.map((featureId) => [
     featureId,
@@ -132,8 +146,20 @@ for (const featureId of orderedFeatures) {
   }
 }
 
+if (unhandledErrors.length > 0) {
+  console.log('\nVitest reported unhandled errors:');
+  for (const error of unhandledErrors) {
+    console.log(`  - ${formatRunnerError(error)}`);
+  }
+}
+
+if (runnerFailed && failingFeatures.length === 0 && unhandledErrors.length === 0 && runnerOutput) {
+  console.log('\nVitest runner output:');
+  console.log(runnerOutput);
+}
+
 console.log(
   `\nSummary: ${orderedFeatures.length - failingFeatures.length}/${orderedFeatures.length} features work.`
 );
 
-process.exit(failingFeatures.length === 0 ? 0 : 1);
+process.exit(failingFeatures.length === 0 && !runnerFailed && unhandledErrors.length === 0 ? 0 : 1);
