@@ -13,7 +13,7 @@ const addReply = async ({ commentId, content, authorId }) => {
 };
 
 const getReplies = async (commentId, { limit = 50 } = {}) => {
-  const replies = await Reply.find({ commentId }).sort({ createdAt: -1 }).limit(limit);
+  const replies = await Reply.find({ commentId }).sort({ createdAt: 1 }).limit(limit);
   return replies.map((r) => ({ id: r._id, commentId: r.commentId, content: r.content, author: r.author, createdAt: r.createdAt }));
 };
 
