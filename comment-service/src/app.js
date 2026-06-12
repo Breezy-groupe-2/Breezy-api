@@ -11,7 +11,9 @@ app.get('/health', (req, res) => {
 });
 
 const commentRoutes = require('./routes/comment.routes');
+const replyRoutes = require('./routes/reply.routes');
 app.use('/api/posts/:postId/comments', commentRoutes);
+app.use('/api/comments/:commentId/replies', replyRoutes);
 
 app.use((err, _req, res, _next) => {
   res.status(err.status ?? 500).json({ error: err.message ?? 'Internal server error' });
