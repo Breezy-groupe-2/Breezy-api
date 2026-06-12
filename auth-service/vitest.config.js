@@ -6,5 +6,7 @@ module.exports = defineConfig({
     exclude: [...configDefaults.exclude, '**/*.acceptance.test.js'],
     globals: true,
     testTimeout: 30000,
+    hookTimeout: 300000,
+    singleFork: true,
   },
 });

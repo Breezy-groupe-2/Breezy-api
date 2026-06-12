@@ -1,5 +1,14 @@
 const postService = require('../services/post.service');
 
+const getPostsByUser = async (req, res, next) => {
+  try {
+    const posts = await postService.getPostsByUser(req.params.userId);
+    res.status(200).json(posts);
+  } catch (err) {
+    next(err);
+  }
+};
+
 const createPost = async (req, res, next) => {
   try {
     const post = await postService.createPost({
@@ -25,4 +34,13 @@ const updatePost = async (req, res, next) => {
   }
 };
 
-module.exports = { createPost, updatePost };
+const getOwnPosts = async (req, res, next) => {
+  try {
+    const posts = await postService.getPostsByUser(req.user.sub);
+    res.status(200).json(posts);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { createPost, updatePost, getPostsByUser, getOwnPosts };
