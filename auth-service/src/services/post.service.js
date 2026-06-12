@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Post = require('../models/post.model');
 const Like = require('../models/like.model');
 
@@ -24,4 +25,19 @@ const updatePost = async ({ postId, content, authorId }) => {
   return { id: post._id, content: post.content, author: post.author, updatedAt: post.updatedAt, likeCount };
 };
 
-module.exports = { createPost, updatePost };
+const getPostsByUser = async (userId) => {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    const err = new Error('User not found');
+    err.status = 404;
+    throw err;
+  }
+  const posts = await Post.find({ author: userId }).sort({ createdAt: -1 });
+  return Promise.all(
+    posts.map(async (post) => {
+      const likeCount = await Like.countDocuments({ post: post._id });
+      return { id: post._id, content: post.content, author: post.author, createdAt: post.createdAt, likeCount };
+    }),
+  );
+};
+
+module.exports = { createPost, updatePost, getPostsByUser };
