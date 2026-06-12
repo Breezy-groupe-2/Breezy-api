@@ -6,7 +6,7 @@ const commentSchema = new mongoose.Schema(
     postId: { type: String, required: true },
     author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 commentSchema.index({ postId: 1, createdAt: -1 });
