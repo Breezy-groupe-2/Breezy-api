@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-// Temporarily shared with follow-service until feed ownership moves off User.following.
+// Temporary shared model: follow-service writes auth-db User.following until feed ownership moves.
 const userSchema = new mongoose.Schema(
   {
     username: {
@@ -21,6 +21,16 @@ const userSchema = new mongoose.Schema(
     passwordHash: {
       type: String,
       required: true,
+    },
+    displayName: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    avatarUrl: {
+      type: String,
+      trim: true,
+      default: '',
     },
     role: {
       type: String,

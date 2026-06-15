@@ -1,6 +1,11 @@
 const { Router } = require('express');
-const { followUser, unfollowUser, getFollowers, getFollowing } = require('../../controllers/follow.controller');
-const { authenticate } = require('../../middlewares/authenticate');
+const {
+  followUser,
+  getFollowers,
+  getFollowing,
+  unfollowUser,
+} = require('../controllers/follow.controller');
+const { authenticate } = require('../middlewares/authenticate');
 
 const router = Router({ mergeParams: true });
 

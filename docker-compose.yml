@@ -52,6 +52,7 @@ services:
       - auth-service
       - post-service
       - comment-service
+      - follow-service
       - feed-service
       - swagger-service
     networks:
@@ -116,6 +117,26 @@ services:
       MONGO_INITDB_DATABASE: breezy_comments
     volumes:
       - comment_db_data:/data/db
+    networks:
+      - breezy-network
+    restart: unless-stopped
+
+  # 🤝 Follow Service
+  follow-service:
+    build:
+      context: ./follow-service
+      dockerfile: Dockerfile
+    container_name: breezy-follow-service
+    ports:
+      - '3006:3006'
+    environment:
+      NODE_ENV: production
+      PORT: 3006
+      MONGODB_URI: ${FOLLOW_SERVICE_MONGODB_URI:-mongodb://admin:admin123@auth-db:27017/breezy_auth?authSource=admin}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+    depends_on:
+      auth-db:
+        condition: service_healthy
     networks:
       - breezy-network
     restart: unless-stopped

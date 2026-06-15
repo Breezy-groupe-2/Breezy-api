@@ -6,6 +6,8 @@ const authServiceApp = require('../../app');
 const User = require('../../models/user.model');
 const postServiceApp = require('../../../../post-service/src/app');
 const commentServiceApp = require('../../../../comment-service/src/app');
+const followServiceApp = require('../../../../follow-service/src/app');
+const Follow = require('../../../../follow-service/src/models/follow.model');
 const Like = require('../../../../post-service/src/models/like.model');
 const Post = require('../../../../post-service/src/models/post.model');
 
@@ -15,11 +17,12 @@ const app = express();
 app.use(authServiceApp);
 app.use(postServiceApp);
 app.use(commentServiceApp);
+app.use(followServiceApp);
 
 let mongod;
 
 const clearDatabase = async () => {
-  await Promise.all([Like.deleteMany({}), Post.deleteMany({}), User.deleteMany({})]);
+  await Promise.all([Follow.deleteMany({}), Like.deleteMany({}), Post.deleteMany({}), User.deleteMany({})]);
 };
 
 const setupAcceptanceDb = () => {
@@ -93,6 +96,7 @@ module.exports = {
   setupAcceptanceDb,
   userPayload,
   models: {
+    Follow,
     Like,
     Post,
     User,

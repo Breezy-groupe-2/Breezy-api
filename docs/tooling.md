@@ -21,6 +21,13 @@ nvm use
 - Zod for request and environment validation
 - Docker Compose for local portability
 
+## Temporary Follow Data Contract
+
+During the service extraction sequence, `follow-service` connects to the same
+MongoDB database as `auth-service` and writes both the `Follow` collection and
+the legacy `User.following` array. This keeps the current feed adapter working
+until feed ownership moves to the follow contract in the next migration slice.
+
 ## Quality Tools
 
 - ESLint checks JavaScript code quality.
