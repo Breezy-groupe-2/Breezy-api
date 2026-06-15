@@ -1,35 +1,22 @@
-const { MongoMemoryServer } = require('mongodb-memory-server');
-const mongoose = require('mongoose');
 const request = require('supertest');
-const User = require('../models/user.model');
-const { app, models } = require('./helpers/api-test-utils');
+const { app, models, setupAcceptanceDb } = require('./helpers/api-test-utils');
 
-const { Post } = models;
+const { Follow, Post, User } = models;
 
-let mongod;
+setupAcceptanceDb();
+
 let tokenA;
 let tokenB;
 let userAId;
 let userBId;
 
-process.env.JWT_SECRET = 'test_secret';
-
 const userA = { username: 'userA', email: 'a@example.com', password: 'Password123' };
 const userB = { username: 'userB', email: 'b@example.com', password: 'Password123' };
-
-beforeAll(async () => {
-  mongod = await MongoMemoryServer.create();
-  await mongoose.connect(mongod.getUri());
-});
-
-afterAll(async () => {
-  await mongoose.disconnect();
-  await mongod.stop();
-});
 
 beforeEach(async () => {
   await User.deleteMany({});
   await Post.deleteMany({});
+  await Follow.deleteMany({});
 
   await request(app).post('/api/v1/auth/register').send(userA);
   const resA = await request(app)
@@ -55,7 +42,7 @@ describe('GET /api/v1/feed', () => {
   });
 
   it('returns posts from followed users sorted newest first', async () => {
-    await User.findByIdAndUpdate(userAId, { following: [userBId] });
+    await Follow.create({ follower: userAId, following: userBId });
 
     await request(app)
       .post('/api/v1/posts')

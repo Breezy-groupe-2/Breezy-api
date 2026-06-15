@@ -21,12 +21,15 @@ nvm use
 - Zod for request and environment validation
 - Docker Compose for local portability
 
-## Temporary Follow Data Contract
+## Feed Service Read-Model Contract
 
-During the service extraction sequence, `follow-service` connects to the same
-MongoDB database as `auth-service` and writes both the `Follow` collection and
-the legacy `User.following` array. This keeps the current feed adapter working
-until feed ownership moves to the follow contract in the next migration slice.
+`feed-service` connects to the same MongoDB database as `auth-service`
+(`auth-db`) and reads the `Follow` and `User` collections. It owns the
+`GET /api/v1/feed` endpoint. Feed-service must never create posts, likes,
+users, or follows — it is read-only on those collections.
+
+`follow-service` also connects to `auth-db` and writes the `Follow` collection
+and the legacy `User.following` array.
 
 ## Quality Tools
 
