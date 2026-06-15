@@ -1,12 +1,13 @@
 const { Router } = require('express');
-const { createPost, updatePost, getPostsByUser, getOwnPosts } = require('../../controllers/post.controller');
-const { likePost, unlikePost } = require('../../controllers/like.controller');
-const { authenticate } = require('../../middlewares/authenticate');
-const { validate, createPostSchema } = require('../../middlewares/validate');
+const { createPost, updatePost, getPostsByUser, getOwnPosts, getFeedPosts } = require('../controllers/post.controller');
+const { likePost, unlikePost } = require('../controllers/like.controller');
+const { authenticate } = require('../middlewares/authenticate');
+const { validate, createPostSchema } = require('../middlewares/validate');
 
 const router = Router();
 
 router.get('/me', authenticate, getOwnPosts);
+router.get('/feed', authenticate, getFeedPosts);
 router.get('/user/:userId', getPostsByUser);
 router.post('/', authenticate, validate(createPostSchema), createPost);
 router.put('/:id', authenticate, validate(createPostSchema), updatePost);
