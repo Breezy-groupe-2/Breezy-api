@@ -71,6 +71,7 @@ services:
       NODE_ENV: production
       PORT: 3002
       MONGODB_URI: ${POST_SERVICE_MONGODB_URI:-mongodb://admin:admin123@post-db:27017/breezy_posts?authSource=admin}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
     depends_on:
       - post-db
     networks:
@@ -102,6 +103,7 @@ services:
       NODE_ENV: production
       PORT: 3003
       MONGODB_URI: ${COMMENT_SERVICE_MONGODB_URI:-mongodb://admin:admin123@comment-db:27017/breezy_comments?authSource=admin}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
     depends_on:
       - comment-db
     networks:
