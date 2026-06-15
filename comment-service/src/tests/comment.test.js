@@ -14,12 +14,20 @@ const jwt = require('jsonwebtoken');
 const userId = new mongoose.Types.ObjectId();
 const token = jwt.sign({ sub: userId, role: 'user' }, 'test_secret', { expiresIn: '1h' });
 
+const originalFetch = global.fetch;
+
 beforeAll(async () => {
+  global.fetch = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({ isActive: true }),
+  });
   mongod = await MongoMemoryServer.create();
   await mongoose.connect(mongod.getUri());
 });
 
 afterAll(async () => {
+  global.fetch = originalFetch;
   await mongoose.disconnect();
   await mongod.stop();
 });

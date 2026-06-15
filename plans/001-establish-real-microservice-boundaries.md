@@ -106,13 +106,13 @@ Required service ownership for this project:
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-|---|---|---|
-| Unit tests | `npm test` | exit 0; current unit suites pass |
-| Lint | `npm run lint` | exit 0; no errors |
-| Acceptance summary | `npm run test:acceptance` | eventually exit 0; after Step 1 it may still fail, but must show real pass/fail counts rather than skipped-only output |
-| Direct acceptance detail | `npx vitest run --config vitest.acceptance.config.js --reporter=verbose --passWithNoTests` | useful while fixing; final target is exit 0 |
-| Compose config check | `docker compose config` | exit 0; gateway and service definitions render |
+| Purpose                  | Command                                                                                    | Expected on success                                                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| Unit tests               | `npm test`                                                                                 | exit 0; current unit suites pass                                                                                       |
+| Lint                     | `npm run lint`                                                                             | exit 0; no errors                                                                                                      |
+| Acceptance summary       | `npm run test:acceptance`                                                                  | eventually exit 0; after Step 1 it may still fail, but must show real pass/fail counts rather than skipped-only output |
+| Direct acceptance detail | `npx vitest run --config vitest.acceptance.config.js --reporter=verbose --passWithNoTests` | useful while fixing; final target is exit 0                                                                            |
+| Compose config check     | `docker compose config`                                                                    | exit 0; gateway and service definitions render                                                                         |
 
 Note: MongoMemoryServer may need permission to bind local ports in restricted environments. If tests fail with `listen EPERM`, rerun in an environment where local port binding is allowed instead of changing the tests.
 
@@ -265,7 +265,7 @@ Feed must be owned by `feed-service`, not `auth-service`. The current feed imple
 const user = await User.findById(userId);
 
 // auth-service/src/services/feed.service.js:11
-const posts = await Post.find({ author: { $in: user.following } })
+const posts = await Post.find({ author: { $in: user.following } });
 ```
 
 For this project stage, choose one explicit contract and document it:

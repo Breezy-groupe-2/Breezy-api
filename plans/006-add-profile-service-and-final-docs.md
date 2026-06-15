@@ -79,13 +79,13 @@ Repository conventions:
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-|---|---|---|
-| Profile tests | `npx vitest run profile-service/src --passWithNoTests` | exit 0 |
-| Acceptance summary | `npm run test:acceptance` | exit 0 and reports `11/11 features work` |
-| Unit tests | `npm test` | exit 0 |
-| Compose config | `docker compose config` | exit 0 |
-| Lint | `npm run lint` | exit 0 |
+| Purpose            | Command                                                | Expected on success                      |
+| ------------------ | ------------------------------------------------------ | ---------------------------------------- |
+| Profile tests      | `npx vitest run profile-service/src --passWithNoTests` | exit 0                                   |
+| Acceptance summary | `npm run test:acceptance`                              | exit 0 and reports `11/11 features work` |
+| Unit tests         | `npm test`                                             | exit 0                                   |
+| Compose config     | `docker compose config`                                | exit 0                                   |
+| Lint               | `npm run lint`                                         | exit 0                                   |
 
 ## Scope
 
@@ -202,7 +202,7 @@ explicit docs/comments explaining external service/read-model use.
 - [ ] `npm run test:acceptance` reports `11/11 features work`.
 - [ ] Auth-service owns only auth/identity behavior.
 - [ ] `README.md`, `docs/tooling.md`, and `swagger/openapi.json` match the
-  architecture Docker Compose starts.
+      architecture Docker Compose starts.
 - [ ] `npm test`, `npm run lint`, and `docker compose config` exit 0.
 - [ ] No files outside scope are modified.
 - [ ] `plans/README.md` status row updated.

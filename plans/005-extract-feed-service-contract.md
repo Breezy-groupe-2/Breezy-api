@@ -44,7 +44,7 @@ The temporary feed service reads user follow state and post documents:
 ```js
 // auth-service/src/services/feed.service.js
 const user = await User.findById(userId);
-const posts = await Post.find({ author: { $in: user.following } })
+const posts = await Post.find({ author: { $in: user.following } });
 ```
 
 Feed-service is expected to be a placeholder before this plan:
@@ -78,13 +78,13 @@ broker or service-to-service HTTP client before the project needs it.
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-|---|---|---|
-| Feed tests | `npx vitest run feed-service/src auth-service/src/tests/feed.test.js --passWithNoTests` | exit 0 |
-| Acceptance detail | `npx vitest run --config vitest.acceptance.config.js --reporter=verbose --passWithNoTests` | Fx5 passes |
-| Unit tests | `npm test` | exit 0 |
-| Compose config | `docker compose config` | exit 0 |
-| Lint | `npm run lint` | exit 0 |
+| Purpose           | Command                                                                                    | Expected on success |
+| ----------------- | ------------------------------------------------------------------------------------------ | ------------------- |
+| Feed tests        | `npx vitest run feed-service/src auth-service/src/tests/feed.test.js --passWithNoTests`    | exit 0              |
+| Acceptance detail | `npx vitest run --config vitest.acceptance.config.js --reporter=verbose --passWithNoTests` | Fx5 passes          |
+| Unit tests        | `npm test`                                                                                 | exit 0              |
+| Compose config    | `docker compose config`                                                                    | exit 0              |
+| Lint              | `npm run lint`                                                                             | exit 0              |
 
 ## Scope
 
@@ -176,7 +176,7 @@ feed-service to read the shared MongoDB collections.
 - [ ] Feed-service owns `GET /api/v1/feed`.
 - [ ] Auth-service no longer mounts or owns feed routes.
 - [ ] Feed-service read-model ownership is documented in code or
-  `docs/tooling.md`.
+      `docs/tooling.md`.
 - [ ] Fx5 passes.
 - [ ] `npm test`, `npm run lint`, and `docker compose config` exit 0.
 - [ ] No files outside scope are modified.

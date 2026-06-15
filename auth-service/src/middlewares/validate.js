@@ -25,6 +25,12 @@ const createPostSchema = z.object({
     .max(280, 'Content must be at most 280 characters'),
 });
 
+const moderationSchema = z.object({
+  status: z.enum(['active', 'suspended', 'banned']),
+  durationHours: z.number().optional(),
+  reason: z.string().min(1, 'Reason is required'),
+});
+
 const validate = (schema) => (req, res, next) => {
   const result = schema.safeParse(req.body);
   if (!result.success) {
@@ -37,4 +43,4 @@ const validate = (schema) => (req, res, next) => {
   next();
 };
 
-module.exports = { validate, registerSchema, loginSchema, createPostSchema };
+module.exports = { validate, registerSchema, loginSchema, createPostSchema, moderationSchema };

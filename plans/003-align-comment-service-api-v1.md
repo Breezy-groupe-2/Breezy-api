@@ -66,12 +66,12 @@ Repository conventions:
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-|---|---|---|
-| Comment tests | `npx vitest run comment-service/src --passWithNoTests` | exit 0 |
-| Acceptance detail | `npx vitest run --config vitest.acceptance.config.js --reporter=verbose --passWithNoTests` | Fx7 and Fx8 pass |
-| Unit tests | `npm test` | exit 0 |
-| Lint | `npm run lint` | exit 0 |
+| Purpose           | Command                                                                                    | Expected on success |
+| ----------------- | ------------------------------------------------------------------------------------------ | ------------------- |
+| Comment tests     | `npx vitest run comment-service/src --passWithNoTests`                                     | exit 0              |
+| Acceptance detail | `npx vitest run --config vitest.acceptance.config.js --reporter=verbose --passWithNoTests` | Fx7 and Fx8 pass    |
+| Unit tests        | `npm test`                                                                                 | exit 0              |
+| Lint              | `npm run lint`                                                                             | exit 0              |
 
 ## Scope
 

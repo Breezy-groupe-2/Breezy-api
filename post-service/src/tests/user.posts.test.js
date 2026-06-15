@@ -1,8 +1,8 @@
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
 const request = require('supertest');
-const User = require('../models/user.model');
-const { app, models } = require('./helpers/api-test-utils');
+const User = require('../../../auth-service/src/models/user.model');
+const { app, models } = require('../../../auth-service/src/tests/helpers/api-test-utils');
 
 const { Post } = models;
 
@@ -14,12 +14,20 @@ process.env.JWT_SECRET = 'test_secret';
 
 const userPayload = { username: 'testuser', email: 'test@example.com', password: 'Password123' };
 
+const originalFetch = global.fetch;
+
 beforeAll(async () => {
+  global.fetch = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({ isActive: true }),
+  });
   mongod = await MongoMemoryServer.create();
   await mongoose.connect(mongod.getUri());
 });
 
 afterAll(async () => {
+  global.fetch = originalFetch;
   await mongoose.disconnect();
   await mongod.stop();
 });
@@ -76,9 +84,7 @@ describe('GET /api/v1/posts/me', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ content: 'My post' });
 
-    const res = await request(app)
-      .get('/api/v1/posts/me')
-      .set('Authorization', `Bearer ${token}`);
+    const res = await request(app).get('/api/v1/posts/me').set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);

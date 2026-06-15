@@ -68,7 +68,7 @@ feed ownership:
 ```js
 // auth-service/src/services/feed.service.js
 const user = await User.findById(userId);
-const posts = await Post.find({ author: { $in: user.following } })
+const posts = await Post.find({ author: { $in: user.following } });
 ```
 
 Current acceptance Fx9 expects follower/following responses to contain at
@@ -97,13 +97,13 @@ Repository conventions:
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-|---|---|---|
-| Follow tests | `npx vitest run follow-service/src --passWithNoTests` | exit 0 |
-| Acceptance detail | `npx vitest run --config vitest.acceptance.config.js --reporter=verbose --passWithNoTests` | Fx9 passes |
-| Unit tests | `npm test` | exit 0 |
-| Compose config | `docker compose config` | exit 0 |
-| Lint | `npm run lint` | exit 0 |
+| Purpose           | Command                                                                                    | Expected on success |
+| ----------------- | ------------------------------------------------------------------------------------------ | ------------------- |
+| Follow tests      | `npx vitest run follow-service/src --passWithNoTests`                                      | exit 0              |
+| Acceptance detail | `npx vitest run --config vitest.acceptance.config.js --reporter=verbose --passWithNoTests` | Fx9 passes          |
+| Unit tests        | `npm test`                                                                                 | exit 0              |
+| Compose config    | `docker compose config`                                                                    | exit 0              |
+| Lint              | `npm run lint`                                                                             | exit 0              |
 
 ## Scope
 
@@ -240,7 +240,7 @@ returns no auth route/controller ownership matches.
 - [ ] Follow routes are served by follow-service.
 - [ ] Auth-service no longer owns follow routes.
 - [ ] Follow/unfollow maintains `User.following` until Plan 005 removes the
-  feed compatibility dependency.
+      feed compatibility dependency.
 - [ ] Public follow responses do not include `email` or `passwordHash`.
 - [ ] Fx9 passes.
 - [ ] `npm test`, `npm run lint`, and `docker compose config` exit 0.

@@ -27,12 +27,16 @@ beforeEach(async () => {
   await User.deleteMany({});
 
   await request(app).post('/api/v1/auth/register').send(userA);
-  const resA = await request(app).post('/api/v1/auth/login').send({ email: userA.email, password: userA.password });
+  const resA = await request(app)
+    .post('/api/v1/auth/login')
+    .send({ email: userA.email, password: userA.password });
   tokenA = resA.body.token;
   userAId = resA.body.user.id;
 
   await request(app).post('/api/v1/auth/register').send(userB);
-  const resB = await request(app).post('/api/v1/auth/login').send({ email: userB.email, password: userB.password });
+  const resB = await request(app)
+    .post('/api/v1/auth/login')
+    .send({ email: userB.email, password: userB.password });
   userBId = resB.body.user.id;
 });
 

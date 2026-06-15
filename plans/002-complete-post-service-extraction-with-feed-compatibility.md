@@ -87,12 +87,12 @@ Repository conventions to match:
 
 ## Commands you will need
 
-| Purpose | Command | Expected on success |
-|---|---|---|
-| Unit tests | `npm test` | exit 0; all unit suites pass |
-| Post/feed focused tests | `npx vitest run auth-service/src/tests/post.test.js auth-service/src/tests/post.update.test.js auth-service/src/tests/like.test.js auth-service/src/tests/user.posts.test.js auth-service/src/tests/feed.test.js --passWithNoTests` | exit 0 |
-| Lint | `npm run lint` | exit 0; no errors |
-| Acceptance detail | `npx vitest run --config vitest.acceptance.config.js --reporter=verbose --passWithNoTests` | Fx3 and Fx6 pass; other deferred features may still fail |
+| Purpose                 | Command                                                                                                                                                                                                                             | Expected on success                                      |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Unit tests              | `npm test`                                                                                                                                                                                                                          | exit 0; all unit suites pass                             |
+| Post/feed focused tests | `npx vitest run auth-service/src/tests/post.test.js auth-service/src/tests/post.update.test.js auth-service/src/tests/like.test.js auth-service/src/tests/user.posts.test.js auth-service/src/tests/feed.test.js --passWithNoTests` | exit 0                                                   |
+| Lint                    | `npm run lint`                                                                                                                                                                                                                      | exit 0; no errors                                        |
+| Acceptance detail       | `npx vitest run --config vitest.acceptance.config.js --reporter=verbose --passWithNoTests`                                                                                                                                          | Fx3 and Fx6 pass; other deferred features may still fail |
 
 If MongoMemoryServer fails with `listen EPERM`, rerun in an environment where
 local port binding is allowed. Do not change tests just to work around sandbox
