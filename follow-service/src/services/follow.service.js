@@ -92,11 +92,11 @@ const getFollowing = async (userId) => {
 
   const follows = await Follow.find({ follower: userId }).populate(
     'following',
-    'username displayName avatarUrl'
+    'username displayName avatarUrl isActive'
   );
 
   return follows
-    .filter((follow) => follow.following)
+    .filter((follow) => follow.following && follow.following.isActive !== false)
     .map((follow) => toPublicUser(follow.following));
 };
 

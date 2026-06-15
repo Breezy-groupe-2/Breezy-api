@@ -1,6 +1,11 @@
 const { Router } = require('express');
 const { likePost, unlikePost } = require('../../controllers/like.controller');
-const { createPost, getOwnPosts, getPostsByUser, updatePost } = require('../../controllers/post.controller');
+const {
+  createPost,
+  getOwnPosts,
+  getPostsByUser,
+  updatePost,
+} = require('../../controllers/post.controller');
 const { authenticate } = require('../../middlewares/authenticate');
 const { validate, postContentSchema } = require('../../middlewares/validate');
 

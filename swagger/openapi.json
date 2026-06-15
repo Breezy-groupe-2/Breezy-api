@@ -1069,12 +1069,17 @@
       },
       "ModerationRequest": {
         "type": "object",
-        "required": ["status"],
+        "required": ["status", "reason"],
         "properties": {
           "status": {
             "type": "string",
-            "enum": ["active", "suspended"],
+            "enum": ["active", "suspended", "banned"],
             "example": "suspended"
+          },
+          "durationHours": {
+            "type": "integer",
+            "description": "Duration in hours for temporary suspensions (optional)",
+            "example": 24
           },
           "reason": {
             "type": "string",
@@ -1092,6 +1097,11 @@
           "moderationStatus": {
             "type": "string",
             "example": "suspended"
+          },
+          "bannedUntil": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-06-16T15:30:00.000Z"
           }
         }
       },

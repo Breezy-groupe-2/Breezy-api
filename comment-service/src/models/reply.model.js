@@ -6,7 +6,7 @@ const replySchema = new mongoose.Schema(
     commentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Comment', required: true },
     author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
 
 replySchema.index({ commentId: 1, createdAt: -1 });

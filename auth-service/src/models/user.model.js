@@ -31,6 +31,42 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    moderationStatus: {
+      type: String,
+      enum: ['active', 'suspended', 'banned'],
+      default: 'active',
+    },
+    bannedUntil: {
+      type: Date,
+      default: null,
+    },
+    moderationHistory: [
+      {
+        action: {
+          type: String,
+          enum: ['suspend', 'ban', 'unban'],
+          required: true,
+        },
+        reason: {
+          type: String,
+          required: true,
+        },
+        durationHours: {
+          type: Number,
+        },
+        bannedUntil: {
+          type: Date,
+        },
+        moderatedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   },
   { timestamps: true }

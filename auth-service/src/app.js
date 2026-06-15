@@ -1,13 +1,16 @@
 const express = require('express');
 const userRoutes = require('./routes/user/user.routes');
+const moderationRoutes = require('./routes/user/user.moderation.routes');
 const { me } = require('./controllers/auth.controller');
 const { authenticate } = require('./middlewares/authenticate');
+const { checkActive } = require('./middlewares/checkActive');
 
 const app = express();
 
 app.use(express.json());
 app.use('/api/v1/auth', userRoutes);
-app.get('/api/v1/users/me', authenticate, me);
+app.get('/api/v1/users/me', authenticate, checkActive, me);
+app.use('/api/v1/users', moderationRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error(err);

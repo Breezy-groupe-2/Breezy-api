@@ -1,8 +1,8 @@
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
 const request = require('supertest');
-const User = require('../models/user.model');
-const { app, models } = require('./helpers/api-test-utils');
+const User = require('../../../auth-service/src/models/user.model');
+const { app, models } = require('../../../auth-service/src/tests/helpers/api-test-utils');
 
 const { Like, Post } = models;
 
@@ -16,12 +16,20 @@ process.env.JWT_SECRET = 'test_secret';
 const userA = { username: 'userA', email: 'a@example.com', password: 'Password123' };
 const userB = { username: 'userB', email: 'b@example.com', password: 'Password123' };
 
+const originalFetch = global.fetch;
+
 beforeAll(async () => {
+  global.fetch = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({ isActive: true }),
+  });
   mongod = await MongoMemoryServer.create();
   await mongoose.connect(mongod.getUri());
 });
 
 afterAll(async () => {
+  global.fetch = originalFetch;
   await mongoose.disconnect();
   await mongod.stop();
 });

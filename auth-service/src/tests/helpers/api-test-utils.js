@@ -22,15 +22,31 @@ app.use(followServiceApp);
 app.use(feedServiceApp);
 
 let mongod;
+let server;
+const serviceUrlEnv = {
+  AUTH_SERVICE_URL: process.env.AUTH_SERVICE_URL,
+  FOLLOW_SERVICE_URL: process.env.FOLLOW_SERVICE_URL,
+  POST_SERVICE_URL: process.env.POST_SERVICE_URL,
+};
 
 const clearDatabase = async () => {
-  await Promise.all([Follow.deleteMany({}), Like.deleteMany({}), Post.deleteMany({}), User.deleteMany({})]);
+  await Promise.all([
+    Follow.deleteMany({}),
+    Like.deleteMany({}),
+    Post.deleteMany({}),
+    User.deleteMany({}),
+  ]);
 };
 
 const setupAcceptanceDb = () => {
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
     await mongoose.connect(mongod.getUri());
+    server = app.listen(0);
+    const serviceUrl = `http://127.0.0.1:${server.address().port}`;
+    process.env.AUTH_SERVICE_URL = serviceUrl;
+    process.env.FOLLOW_SERVICE_URL = serviceUrl;
+    process.env.POST_SERVICE_URL = serviceUrl;
   });
 
   beforeEach(async () => {
@@ -42,10 +58,22 @@ const setupAcceptanceDb = () => {
   });
 
   afterAll(async () => {
+    if (server) {
+      await new Promise((resolve, reject) => {
+        server.close((err) => (err ? reject(err) : resolve()));
+      });
+    }
     await mongoose.disconnect();
     if (mongod) {
       await mongod.stop();
     }
+    Object.entries(serviceUrlEnv).forEach(([key, value]) => {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    });
   });
 };
 

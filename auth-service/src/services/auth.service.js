@@ -14,6 +14,31 @@ const toPublicUser = (user) => ({
   role: user.role,
 });
 
+const checkUserStatus = async (user) => {
+  if (user.moderationStatus === 'suspended' && user.bannedUntil && user.bannedUntil <= new Date()) {
+    user.moderationStatus = 'active';
+    user.isActive = true;
+    user.bannedUntil = null;
+    user.moderationHistory.push({
+      action: 'unban',
+      reason: 'Auto-reactivation: temporary ban expired',
+      durationHours: 0,
+      bannedUntil: null,
+    });
+    await user.save();
+  }
+
+  if (
+    !user.isActive ||
+    user.moderationStatus === 'banned' ||
+    user.moderationStatus === 'suspended'
+  ) {
+    const err = new Error('Forbidden');
+    err.status = 403;
+    throw err;
+  }
+};
+
 const register = async ({ username, email, password }) => {
   const passwordHash = await bcrypt.hash(password, 12);
 
@@ -44,6 +69,9 @@ const login = async ({ email, password }) => {
     err.status = 401;
     throw err;
   }
+
+  await checkUserStatus(user);
+
   const token = signToken(user);
   return { token, user: toPublicUser(user) };
 };
