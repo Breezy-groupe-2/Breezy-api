@@ -52,6 +52,7 @@ services:
       - auth-service
       - post-service
       - comment-service
+      - follow-service
       - feed-service
       - swagger-service
     networks:
@@ -70,6 +71,7 @@ services:
       NODE_ENV: production
       PORT: 3002
       MONGODB_URI: ${POST_SERVICE_MONGODB_URI:-mongodb://admin:admin123@post-db:27017/breezy_posts?authSource=admin}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
     depends_on:
       - post-db
     networks:
@@ -101,6 +103,7 @@ services:
       NODE_ENV: production
       PORT: 3003
       MONGODB_URI: ${COMMENT_SERVICE_MONGODB_URI:-mongodb://admin:admin123@comment-db:27017/breezy_comments?authSource=admin}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
     depends_on:
       - comment-db
     networks:
@@ -120,7 +123,27 @@ services:
       - breezy-network
     restart: unless-stopped
 
-  # 📰 Feed Service (placeholder)
+  # 🤝 Follow Service
+  follow-service:
+    build:
+      context: ./follow-service
+      dockerfile: Dockerfile
+    container_name: breezy-follow-service
+    ports:
+      - '3006:3006'
+    environment:
+      NODE_ENV: production
+      PORT: 3006
+      MONGODB_URI: ${FOLLOW_SERVICE_MONGODB_URI:-mongodb://admin:admin123@auth-db:27017/breezy_auth?authSource=admin}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    networks:
+      - breezy-network
+    restart: unless-stopped
+
+  # 📰 Feed Service
   feed-service:
     build:
       context: ./feed-service
@@ -131,24 +154,15 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3004
-      MONGODB_URI: ${FEED_SERVICE_MONGODB_URI:-mongodb://admin:admin123@feed-db:27017/breezy_feeds?authSource=admin}
+      MONGODB_URI: ${FEED_SERVICE_MONGODB_URI:-mongodb://admin:admin123@auth-db:27017/breezy_auth?authSource=admin}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
     depends_on:
-      - feed-db
+      auth-db:
+        condition: service_healthy
     networks:
       - breezy-network
     restart: unless-stopped
 
-  feed-db:
-    image: mongo:latest
-    container_name: breezy-feed-db
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-admin123}
-      MONGO_INITDB_DATABASE: breezy_feeds
-    volumes:
-      - feed_db_data:/data/db
-    networks:
-      - breezy-network
   # 📖 Swagger Documentation Service
   swagger-service:
     build:
@@ -170,7 +184,6 @@ volumes:
   auth_db_data:
   post_db_data:
   comment_db_data:
-  feed_db_data:
 
 networks:
   breezy-network:

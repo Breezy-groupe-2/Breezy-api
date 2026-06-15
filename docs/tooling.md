@@ -21,6 +21,16 @@ nvm use
 - Zod for request and environment validation
 - Docker Compose for local portability
 
+## Feed Service Read-Model Contract
+
+`feed-service` connects to the same MongoDB database as `auth-service`
+(`auth-db`) and reads the `Follow` and `User` collections. It owns the
+`GET /api/v1/feed` endpoint. Feed-service must never create posts, likes,
+users, or follows — it is read-only on those collections.
+
+`follow-service` also connects to `auth-db` and writes the `Follow` collection
+and the legacy `User.following` array.
+
 ## Quality Tools
 
 - ESLint checks JavaScript code quality.

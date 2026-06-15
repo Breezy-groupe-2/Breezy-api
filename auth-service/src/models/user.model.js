@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+// Temporarily shared with follow-service until feed ownership moves off User.following.
 const userSchema = new mongoose.Schema(
   {
     username: {
@@ -35,4 +36,4 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = mongoose.models.User || mongoose.model('User', userSchema);
