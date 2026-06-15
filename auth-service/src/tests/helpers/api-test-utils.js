@@ -5,6 +5,7 @@ const request = require('supertest');
 const authServiceApp = require('../../app');
 const User = require('../../models/user.model');
 const postServiceApp = require('../../../../post-service/src/app');
+const commentServiceApp = require('../../../../comment-service/src/app');
 const Like = require('../../../../post-service/src/models/like.model');
 const Post = require('../../../../post-service/src/models/post.model');
 
@@ -13,6 +14,7 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_secret';
 const app = express();
 app.use(authServiceApp);
 app.use(postServiceApp);
+app.use(commentServiceApp);
 
 let mongod;
 

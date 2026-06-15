@@ -33,10 +33,10 @@ beforeEach(async () => {
   commentId = comment._id.toString();
 });
 
-describe('POST /api/comments/:commentId/replies', () => {
+describe('POST /api/v1/comments/:commentId/replies', () => {
   it('returns 201 and created reply', async () => {
     const res = await request(app)
-      .post(`/api/comments/${commentId}/replies`)
+      .post(`/api/v1/comments/${commentId}/replies`)
       .set('Authorization', `Bearer ${token}`)
       .send({ content: 'A reply' });
 
@@ -48,7 +48,7 @@ describe('POST /api/comments/:commentId/replies', () => {
   it('returns 404 when comment does not exist', async () => {
     const fakeId = new mongoose.Types.ObjectId();
     const res = await request(app)
-      .post(`/api/comments/${fakeId}/replies`)
+      .post(`/api/v1/comments/${fakeId}/replies`)
       .set('Authorization', `Bearer ${token}`)
       .send({ content: 'A reply' });
 
@@ -57,16 +57,31 @@ describe('POST /api/comments/:commentId/replies', () => {
 
   it('returns 401 when not authenticated', async () => {
     const res = await request(app)
-      .post(`/api/comments/${commentId}/replies`)
+      .post(`/api/v1/comments/${commentId}/replies`)
       .send({ content: 'A reply' });
 
     expect(res.status).toBe(401);
   });
+
+  it.each([
+    ['empty content', ''],
+    ['whitespace-only content', '   '],
+    ['overlength content', 'a'.repeat(281)],
+  ])('returns 400 for %s', async (_caseName, content) => {
+    const res = await request(app)
+      .post(`/api/v1/comments/${commentId}/replies`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ error: 'Validation failed' });
+    expect(res.body.details[0]).toHaveProperty('field', 'content');
+  });
 });
 
-describe('GET /api/comments/:commentId/replies', () => {
+describe('GET /api/v1/comments/:commentId/replies', () => {
   it('returns 200 and empty array when no replies', async () => {
-    const res = await request(app).get(`/api/comments/${commentId}/replies`);
+    const res = await request(app).get(`/api/v1/comments/${commentId}/replies`);
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
@@ -74,15 +89,15 @@ describe('GET /api/comments/:commentId/replies', () => {
 
   it('returns replies sorted oldest first', async () => {
     await request(app)
-      .post(`/api/comments/${commentId}/replies`)
+      .post(`/api/v1/comments/${commentId}/replies`)
       .set('Authorization', `Bearer ${token}`)
       .send({ content: 'First reply' });
     await request(app)
-      .post(`/api/comments/${commentId}/replies`)
+      .post(`/api/v1/comments/${commentId}/replies`)
       .set('Authorization', `Bearer ${token}`)
       .send({ content: 'Second reply' });
 
-    const res = await request(app).get(`/api/comments/${commentId}/replies`);
+    const res = await request(app).get(`/api/v1/comments/${commentId}/replies`);
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(2);
