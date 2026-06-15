@@ -1,10 +1,10 @@
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
 const request = require('supertest');
-const app = require('../app');
 const User = require('../models/user.model');
-const Post = require('../models/post.model');
-const Like = require('../models/like.model');
+const { app, models } = require('./helpers/api-test-utils');
+
+const { Like, Post } = models;
 
 let mongod;
 let tokenA;

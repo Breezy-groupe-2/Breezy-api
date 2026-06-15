@@ -1,6 +1,16 @@
 const Reply = require('../models/reply.model');
 const Comment = require('../models/comment.model');
 
+const serializeAuthor = (author) => ({ id: author.toString() });
+
+const serializeReply = (reply) => ({
+  id: reply._id,
+  commentId: reply.commentId,
+  content: reply.content,
+  author: serializeAuthor(reply.author),
+  createdAt: reply.createdAt,
+});
+
 const addReply = async ({ commentId, content, authorId }) => {
   const comment = await Comment.findById(commentId);
   if (!comment) {
@@ -9,12 +19,12 @@ const addReply = async ({ commentId, content, authorId }) => {
     throw err;
   }
   const reply = await Reply.create({ commentId, content, author: authorId });
-  return { id: reply._id, commentId: reply.commentId, content: reply.content, author: reply.author, createdAt: reply.createdAt };
+  return serializeReply(reply);
 };
 
 const getReplies = async (commentId, { limit = 50 } = {}) => {
   const replies = await Reply.find({ commentId }).sort({ createdAt: 1 }).limit(limit);
-  return replies.map((r) => ({ id: r._id, commentId: r.commentId, content: r.content, author: r.author, createdAt: r.createdAt }));
+  return replies.map(serializeReply);
 };
 
 module.exports = { addReply, getReplies };
