@@ -58,7 +58,7 @@ services:
       - breezy-network
     restart: unless-stopped
 
-  # 📝 Post Service (placeholder)
+  # 📝 Post Service
   post-service:
     build:
       context: ./post-service
@@ -70,8 +70,10 @@ services:
       NODE_ENV: production
       PORT: 3002
       MONGODB_URI: ${POST_SERVICE_MONGODB_URI:-mongodb://admin:admin123@post-db:27017/breezy_posts?authSource=admin}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
     depends_on:
-      - post-db
+      post-db:
+        condition: service_healthy
     networks:
       - breezy-network
     restart: unless-stopped
@@ -88,6 +90,11 @@ services:
     networks:
       - breezy-network
     restart: unless-stopped
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # 💬 Comment Service (placeholder)
   comment-service:
@@ -120,7 +127,7 @@ services:
       - breezy-network
     restart: unless-stopped
 
-  # 📰 Feed Service (placeholder)
+  # 📰 Feed Service
   feed-service:
     build:
       context: ./feed-service
@@ -131,24 +138,15 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3004
-      MONGODB_URI: ${FEED_SERVICE_MONGODB_URI:-mongodb://admin:admin123@feed-db:27017/breezy_feeds?authSource=admin}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      AUTH_SERVICE_URL: http://auth-service:3001
+      POST_SERVICE_URL: http://post-service:3002
     depends_on:
-      - feed-db
+      - auth-service
+      - post-service
     networks:
       - breezy-network
     restart: unless-stopped
-
-  feed-db:
-    image: mongo:latest
-    container_name: breezy-feed-db
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-admin123}
-      MONGO_INITDB_DATABASE: breezy_feeds
-    volumes:
-      - feed_db_data:/data/db
-    networks:
-      - breezy-network
   # 📖 Swagger Documentation Service
   swagger-service:
     build:
@@ -170,7 +168,6 @@ volumes:
   auth_db_data:
   post_db_data:
   comment_db_data:
-  feed_db_data:
 
 networks:
   breezy-network:

@@ -1,16 +1,19 @@
 const express = require('express');
+const feedRoutes = require('./routes/feed.routes');
 
 const app = express();
 
-// Middleware
 app.use(express.json());
 
-// Health check
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'Feed Service is running' });
 });
 
-// Routes will be added here
-// app.use('/api/feed', feedRoutes);
+app.use('/api/v1/feed', feedRoutes);
+
+app.use((err, _req, res, _next) => {
+  console.error(err);
+  res.status(err.status ?? 500).json({ error: err.message ?? 'Internal server error' });
+});
 
 module.exports = app;

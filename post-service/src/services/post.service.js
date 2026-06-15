@@ -4,13 +4,7 @@ const Like = require('../models/like.model');
 
 const createPost = async ({ content, authorId }) => {
   const post = await Post.create({ content, author: authorId });
-  return {
-    id: post._id,
-    content: post.content,
-    author: post.author,
-    createdAt: post.createdAt,
-    likeCount: 0,
-  };
+  return { id: post._id, content: post.content, author: post.author, createdAt: post.createdAt, likeCount: 0 };
 };
 
 const updatePost = async ({ postId, content, authorId }) => {
@@ -28,13 +22,7 @@ const updatePost = async ({ postId, content, authorId }) => {
   post.content = content;
   await post.save();
   const likeCount = await Like.countDocuments({ post: post._id });
-  return {
-    id: post._id,
-    content: post.content,
-    author: post.author,
-    updatedAt: post.updatedAt,
-    likeCount,
-  };
+  return { id: post._id, content: post.content, author: post.author, updatedAt: post.updatedAt, likeCount };
 };
 
 const getPostsByUser = async (userId) => {
@@ -52,4 +40,18 @@ const getPostsByUser = async (userId) => {
   );
 };
 
-module.exports = { createPost, updatePost, getPostsByUser };
+const getPostsByAuthorIds = async (authorIds, limit = 20) => {
+  const validIds = authorIds.filter((id) => mongoose.Types.ObjectId.isValid(id));
+  if (!validIds.length) return [];
+  const posts = await Post.find({ author: { $in: validIds } })
+    .sort({ createdAt: -1 })
+    .limit(limit);
+  return Promise.all(
+    posts.map(async (post) => {
+      const likeCount = await Like.countDocuments({ post: post._id });
+      return { id: post._id, content: post.content, author: post.author, createdAt: post.createdAt, likeCount };
+    }),
+  );
+};
+
+module.exports = { createPost, updatePost, getPostsByUser, getPostsByAuthorIds };
