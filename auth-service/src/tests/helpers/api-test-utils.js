@@ -1,12 +1,18 @@
 const { MongoMemoryServer } = require('mongodb-memory-server');
+const express = require('express');
 const mongoose = require('mongoose');
 const request = require('supertest');
-const app = require('../../app');
-const Like = require('../../models/like.model');
-const Post = require('../../models/post.model');
+const authServiceApp = require('../../app');
 const User = require('../../models/user.model');
+const postServiceApp = require('../../../../post-service/src/app');
+const Like = require('../../../../post-service/src/models/like.model');
+const Post = require('../../../../post-service/src/models/post.model');
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_secret';
+
+const app = express();
+app.use(authServiceApp);
+app.use(postServiceApp);
 
 let mongod;
 

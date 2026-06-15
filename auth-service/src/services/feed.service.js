@@ -1,4 +1,5 @@
-const Post = require('../models/post.model');
+// Temporary compatibility until feed-service owns timeline composition.
+const Post = require('../../../post-service/src/models/post.model');
 const User = require('../models/user.model');
 
 const getFeed = async (userId, { limit = 20 } = {}) => {
