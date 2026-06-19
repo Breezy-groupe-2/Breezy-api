@@ -21,6 +21,8 @@ Required variables:
 - `MONGODB_URI`: MongoDB connection string
 - `JWT_SECRET`: secret used to sign JWTs
 
+Set `NODE_ENV=development` explicitly for local development. `NODE_ENV` has no default, so an omitted value stops every service before startup rather than enabling development credentials.
+
 Generate independent local credentials rather than committing them:
 
 ```bash

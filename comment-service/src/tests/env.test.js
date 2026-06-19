@@ -20,6 +20,10 @@ describe('environment configuration', () => {
     expect(Object.isFrozen(config)).toBe(true);
   });
 
+  it('rejects a missing NODE_ENV instead of assuming development', () => {
+    expect(() => parseEnv({ PORT: '4100' })).toThrow(/NODE_ENV/);
+  });
+
   it('rejects missing production credentials', () => {
     expect(() => parseEnv({ ...productionConfig, JWT_SECRET: undefined })).toThrow(/JWT_SECRET/);
     expect(() => parseEnv({ ...productionConfig, MONGODB_URI: undefined })).toThrow(/MONGODB_URI/);

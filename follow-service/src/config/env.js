@@ -5,7 +5,7 @@ const { z } = require('zod');
 const placeholderPattern = /(?:change.*production|change[-_ ]?me|placeholder|example)/i;
 
 const schema = z.object({
-  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  NODE_ENV: z.enum(['development', 'test', 'production']),
   PORT: z.coerce.number().int().positive().max(65535).default(3006),
   JWT_SECRET: z.string().optional(),
   MONGODB_URI: z.string().optional(),
