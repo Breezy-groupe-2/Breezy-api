@@ -1,49 +1,44 @@
 const express = require('express');
 const swaggerUi = require('swagger-ui-express');
-const fs = require('fs');
-const path = require('path');
 
 const app = express();
 
 app.use(express.json());
 
-// Resolve path to openapi.json
-let swaggerDocument;
-try {
-  let swaggerPath = path.join(__dirname, '..', '..', 'swagger', 'openapi.json');
-  if (!fs.existsSync(swaggerPath)) {
-    swaggerPath = path.join(__dirname, '..', '..', 'Swagger', 'openapi.json');
-  }
-  if (!fs.existsSync(swaggerPath)) {
-    swaggerPath = path.join(__dirname, '..', 'swagger', 'openapi.json');
-  }
-  if (!fs.existsSync(swaggerPath)) {
-    swaggerPath = path.join(__dirname, '..', 'Swagger', 'openapi.json');
-  }
-  if (!fs.existsSync(swaggerPath)) {
-    swaggerPath = path.join(process.cwd(), 'swagger', 'openapi.json');
-  }
-  if (!fs.existsSync(swaggerPath)) {
-    swaggerPath = path.join(process.cwd(), 'Swagger', 'openapi.json');
-  }
+const services = [
+  { path: '/api/v1/auth/swagger.json', target: 'http://auth-service:3001/api/v1/auth/swagger.json', name: 'Authentication & Moderation' },
+  { path: '/api/v1/posts/swagger.json', target: 'http://post-service:3002/api/v1/posts/swagger.json', name: 'Posts & Likes' },
+  { path: '/api/v1/comments/swagger.json', target: 'http://comment-service:3003/api/v1/comments/swagger.json', name: 'Comments & Replies' },
+  { path: '/api/v1/follow/swagger.json', target: 'http://follow-service:3006/api/v1/follow/swagger.json', name: 'Follows' },
+  { path: '/api/v1/feed/swagger.json', target: 'http://feed-service:3004/api/v1/feed/swagger.json', name: 'Timeline Feed' },
+  { path: '/api/v1/profiles/swagger.json', target: 'http://profile-service:3007/api/v1/profiles/swagger.json', name: 'User Profiles' }
+];
 
-  if (fs.existsSync(swaggerPath)) {
-    swaggerDocument = JSON.parse(fs.readFileSync(swaggerPath, 'utf8'));
-    console.log(`Loaded swagger spec from ${swaggerPath}`);
-  } else {
-    console.error('Swagger spec file (openapi.json) not found');
-  }
-} catch (err) {
-  console.error('Error loading Swagger document:', err);
-}
-
-if (swaggerDocument) {
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-} else {
-  app.get('/api-docs', (req, res) => {
-    res.status(500).json({ error: 'Swagger configuration is missing or invalid' });
+// Define proxy routes in swagger-service itself to support direct port 3005 access
+services.forEach(service => {
+  app.get(service.path, async (req, res) => {
+    try {
+      const response = await fetch(service.target);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch from service: ${response.statusText}`);
+      }
+      const data = await response.json();
+      res.setHeader('Content-Type', 'application/json');
+      res.json(data);
+    } catch (err) {
+      res.status(502).json({ error: `Bad Gateway: ${err.message}`, service: service.name });
+    }
   });
-}
+});
+
+const options = {
+  explorer: true,
+  swaggerOptions: {
+    urls: services.map(s => ({ url: s.path, name: s.name }))
+  }
+};
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(null, options));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
