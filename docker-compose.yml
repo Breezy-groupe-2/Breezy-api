@@ -54,6 +54,7 @@ services:
       - comment-service
       - follow-service
       - feed-service
+      - profile-service
       - swagger-service
     networks:
       - breezy-network
@@ -163,6 +164,40 @@ services:
       - breezy-network
     restart: unless-stopped
 
+  # 👤 Profile Service
+  profile-service:
+    build:
+      context: ./profile-service
+      dockerfile: Dockerfile
+    container_name: breezy-profile-service
+    ports:
+      - '3007:3007'
+    environment:
+      NODE_ENV: production
+      PORT: 3007
+      MONGODB_URI: ${PROFILE_SERVICE_MONGODB_URI:-mongodb://admin:admin123@profile-db:27017/breezy_profiles?authSource=admin}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      AUTH_SERVICE_URL: http://auth-service:3001
+    depends_on:
+      - profile-db
+      - auth-service
+    networks:
+      - breezy-network
+    restart: unless-stopped
+
+  profile-db:
+    image: mongo:latest
+    container_name: breezy-profile-db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-admin123}
+      MONGO_INITDB_DATABASE: breezy_profiles
+    volumes:
+      - profile_db_data:/data/db
+    networks:
+      - breezy-network
+    restart: unless-stopped
+
   # 📖 Swagger Documentation Service
   swagger-service:
     build:
@@ -184,6 +219,7 @@ volumes:
   auth_db_data:
   post_db_data:
   comment_db_data:
+  profile_db_data:
 
 networks:
   breezy-network:
