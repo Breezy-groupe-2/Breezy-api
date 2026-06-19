@@ -209,8 +209,6 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3005
-    volumes:
-      - ./swagger:/app/swagger:ro
     networks:
       - breezy-network
     restart: unless-stopped

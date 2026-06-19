@@ -1,9 +1,14 @@
 const express = require('express');
 
+const { setupSwagger } = require('./config/swagger');
+
 const app = express();
 
 // Middleware
 app.use(express.json());
+
+// Initialize Swagger documentation before API routes
+setupSwagger(app);
 
 // Health check
 app.get('/health', (req, res) => {
