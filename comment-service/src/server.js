@@ -1,14 +1,11 @@
-require('dotenv').config();
-
 const app = require('./app');
 const { connectDB } = require('./config/database');
-
-const PORT = process.env.PORT || 3003;
+const { env } = require('./config/env');
 
 connectDB()
   .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Comment Service running on port ${PORT}`);
+    app.listen(env.port, () => {
+      console.log(`Comment Service running on port ${env.port}`);
     });
   })
   .catch((err) => {

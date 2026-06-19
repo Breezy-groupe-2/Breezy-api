@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { env } = require('../config/env');
 
 const verifyActiveUser = async (authHeader) => {
   const authServiceUrl = process.env.AUTH_SERVICE_URL || 'http://auth-service:3001';
@@ -34,7 +35,7 @@ const authenticate = async (req, res, next) => {
   }
   const token = authHeader.slice(7);
   try {
-    req.user = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = jwt.verify(token, env.jwtSecret);
   } catch {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }

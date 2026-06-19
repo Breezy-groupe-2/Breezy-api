@@ -1,14 +1,12 @@
 const mongoose = require('mongoose');
 const app = require('./app');
-const { mongodbUri } = require('./config/database');
-
-const PORT = process.env.PORT || 3006;
+const { env } = require('./config/env');
 
 mongoose
-  .connect(mongodbUri)
+  .connect(env.mongodbUri)
   .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Follow Service running on port ${PORT}`);
+    app.listen(env.port, () => {
+      console.log(`Follow Service running on port ${env.port}`);
     });
   })
   .catch((err) => {
