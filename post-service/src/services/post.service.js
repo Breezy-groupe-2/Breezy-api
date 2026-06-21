@@ -56,4 +56,13 @@ const getPostsByUser = async (userId) => {
   return Promise.all(posts.map((post) => serializePost(post)));
 };
 
-module.exports = { createPost, updatePost, getPostsByUser, postNotFoundError };
+const getPostsByAuthors = async ({ authorIds, limit }) => {
+  if (authorIds.length === 0) {
+    return [];
+  }
+
+  const posts = await Post.find({ author: { $in: authorIds } }).sort({ createdAt: -1 }).limit(limit);
+  return Promise.all(posts.map((post) => serializePost(post)));
+};
+
+module.exports = { createPost, updatePost, getPostsByUser, getPostsByAuthors, postNotFoundError };
