@@ -32,8 +32,6 @@ const assertActiveUser = async (userId) => {
 const toPublicUser = (user) => ({
   id: user._id.toString(),
   username: user.username,
-  displayName: user.displayName ?? '',
-  avatarUrl: user.avatarUrl ?? '',
 });
 
 const followUser = async ({ followerId, followingId }) => {
@@ -79,10 +77,7 @@ const unfollowUser = async ({ followerId, followingId }) => {
 const getFollowers = async (userId) => {
   assertValidUserId(userId);
 
-  const follows = await Follow.find({ following: userId }).populate(
-    'follower',
-    'username displayName avatarUrl'
-  );
+  const follows = await Follow.find({ following: userId }).populate('follower', 'username');
 
   return follows.filter((follow) => follow.follower).map((follow) => toPublicUser(follow.follower));
 };
@@ -90,10 +85,7 @@ const getFollowers = async (userId) => {
 const getFollowing = async (userId) => {
   assertValidUserId(userId);
 
-  const follows = await Follow.find({ follower: userId }).populate(
-    'following',
-    'username displayName avatarUrl isActive'
-  );
+  const follows = await Follow.find({ follower: userId }).populate('following', 'username isActive');
 
   return follows
     .filter((follow) => follow.following && follow.following.isActive !== false)
