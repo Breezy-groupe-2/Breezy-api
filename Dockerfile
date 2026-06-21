@@ -1,15 +1,3 @@
-FROM node:22-alpine
+FROM alpine:3.22
 
-WORKDIR /app
-
-ENV NODE_ENV=production
-ENV PORT=4000
-
-COPY package*.json ./
-RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
-
-COPY . .
-
-EXPOSE 4000
-
-CMD ["npm", "start"]
+CMD ["sh", "-c", "printf '%s\n' 'Use docker compose up to start Breezy through the Nginx gateway on port 3000.' && exit 1"]

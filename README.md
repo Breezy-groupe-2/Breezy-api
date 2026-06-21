@@ -2,11 +2,11 @@
 
 Breezy API is the back-end prototype for Breezy, a lightweight social network inspired by Twitter/X.
 
-This repository contains the Breezy API Express application scaffold.
+This repository contains the Breezy API microservice prototype.
 
 ## Runtime Configuration
 
-The API is expected to run on port `4000`.
+Breezy's canonical local runtime is Docker Compose. Compose starts the Nginx API gateway on host port `3000`; the service containers run behind that gateway on the Compose network.
 
 Copy `.env.example` to `.env` for local development:
 
@@ -17,27 +17,29 @@ cp .env.example .env
 Required variables:
 
 - `NODE_ENV`: runtime environment
-- `PORT`: HTTP port, default `4000`
+- `PORT`: service-specific HTTP port, set by Docker Compose for each container
 - `MONGODB_URI`: MongoDB connection string
 - `JWT_SECRET`: secret used to sign JWTs
 
 ## Docker
 
-The API image and local MongoDB service are defined for local development.
+The local MongoDB databases, service containers, and Nginx gateway are defined in Docker Compose.
 
-Build the API image:
-
-```bash
-docker build -t breezy-api .
-```
-
-Start the API and MongoDB stack:
+Start the gateway-backed stack:
 
 ```bash
 docker compose up --build
 ```
 
-The API container starts `src/server.js`.
+Open the API through the gateway at `http://localhost:3000`. Run `docker compose config --quiet` to validate the topology without starting containers.
+
+The gateway smoke script exercises representative routes through Nginx. It keeps the canonical Compose default at port `3000`, but the smoke run maps the gateway to an alternate host port with `API_GATEWAY_PORT` when local port `3000` is already occupied.
+
+```bash
+npm run test:gateway-smoke
+```
+
+Local gateway smoke requires access to the Docker daemon. In environments where `/var/run/docker.sock` is not accessible, the script cannot start or clean up containers; use `docker compose config --quiet`, `npm test`, and `npm run lint` as the available non-Docker checks until Docker socket permission is restored.
 
 ## Tooling Decisions
 
