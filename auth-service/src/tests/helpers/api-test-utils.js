@@ -8,9 +8,11 @@ const postServiceApp = require('../../../../post-service/src/app');
 const commentServiceApp = require('../../../../comment-service/src/app');
 const followServiceApp = require('../../../../follow-service/src/app');
 const feedServiceApp = require('../../../../feed-service/src/app');
+const profileServiceApp = require('../../../../profile-service/src/app');
 const Follow = require('../../../../follow-service/src/models/follow.model');
 const Like = require('../../../../post-service/src/models/like.model');
 const Post = require('../../../../post-service/src/models/post.model');
+const Profile = require('../../../../profile-service/src/models/profile.model');
 
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_secret';
 
@@ -19,6 +21,7 @@ app.use(authServiceApp);
 app.use(postServiceApp);
 app.use(commentServiceApp);
 app.use(followServiceApp);
+app.use(profileServiceApp);
 app.use(feedServiceApp);
 
 let mongod;
@@ -34,6 +37,7 @@ const clearDatabase = async () => {
     Follow.deleteMany({}),
     Like.deleteMany({}),
     Post.deleteMany({}),
+    Profile.deleteMany({}),
     User.deleteMany({}),
   ]);
 };
@@ -129,6 +133,7 @@ module.exports = {
     Follow,
     Like,
     Post,
+    Profile,
     User,
   },
 };
