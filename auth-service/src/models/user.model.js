@@ -82,6 +82,7 @@ const userSchema = new mongoose.Schema(
         },
         _id: false,
       },
+      _id: false,
     },
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   },
