@@ -31,6 +31,17 @@ const moderationSchema = z.object({
   reason: z.string().min(1, 'Reason is required'),
 });
 
+const updatePreferencesSchema = z
+  .object({
+    theme: z
+      .object({
+        mode: z.enum(['light', 'dark']),
+        accentColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Accent color must be a #RRGGBB hex color'),
+      })
+      .strict(),
+  })
+  .strict();
+
 const validate = (schema) => (req, res, next) => {
   const result = schema.safeParse(req.body);
   if (!result.success) {
@@ -43,4 +54,11 @@ const validate = (schema) => (req, res, next) => {
   next();
 };
 
-module.exports = { validate, registerSchema, loginSchema, createPostSchema, moderationSchema };
+module.exports = {
+  validate,
+  registerSchema,
+  loginSchema,
+  createPostSchema,
+  moderationSchema,
+  updatePreferencesSchema,
+};
