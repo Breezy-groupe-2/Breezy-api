@@ -104,9 +104,7 @@ const updatePreferences = async (userId, preferences) => {
     throw err;
   }
 
-  user.preferences = {
-    theme: preferences.theme,
-  };
+  user.preferences.theme = preferences.theme;
 
   await user.save();
 
