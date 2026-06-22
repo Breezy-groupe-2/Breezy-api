@@ -27,9 +27,22 @@ Use meaningful HTTP status codes:
 - `404 Not Found` for missing resources.
 - `500 Internal Server Error` for unexpected failures.
 
+## Auth Policy Matrix
+
+Protected write, self, and feed endpoints require a JWT and active-user verification. Public read endpoints remain public unless an endpoint explicitly documents a stricter requirement.
+
+| Condition | Status |
+| --- | --- |
+| Missing, malformed, invalid, or expired token | `401 Unauthorized` |
+| Authenticated user is inactive, banned, or suspended | `403 Forbidden` |
+| Authenticated user no longer exists in auth-service | `404 Not Found` |
+| Auth-service network failure or upstream 5xx | `502 Bad Gateway` |
+
 ## Validation
 
 Validate request bodies, route params, query strings, and environment variables with Zod before business logic runs.
+
+Profile APIs expose avatar image URLs as `avatarUrl`. Internal persistence may keep a different field name, but request and response DTOs should use `avatarUrl`.
 
 ## Errors
 

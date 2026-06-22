@@ -36,6 +36,15 @@ const { authenticate } = require('../middlewares/authenticate');
  *     tags: [Feed]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 20
+ *         description: Maximum number of feed posts to return. Values below 1 or above 100 are clamped.
  *     responses:
  *       200:
  *         description: Success

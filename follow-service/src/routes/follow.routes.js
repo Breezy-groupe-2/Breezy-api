@@ -11,7 +11,7 @@ const { authenticate } = require('../middlewares/authenticate');
  * @openapi
  * components:
  *   schemas:
- *     UserProfileSummary:
+ *     UserSummary:
  *       type: object
  *       properties:
  *         id:
@@ -20,9 +20,6 @@ const { authenticate } = require('../middlewares/authenticate');
  *         username:
  *           type: string
  *           example: follower_user
- *         displayName:
- *           type: string
- *           example: Follower Nick
  */
 
 /**
@@ -94,7 +91,7 @@ const { authenticate } = require('../middlewares/authenticate');
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/UserProfileSummary'
+ *                 $ref: '#/components/schemas/UserSummary'
  *       401:
  *         description: Unauthorized
  *
@@ -119,7 +116,7 @@ const { authenticate } = require('../middlewares/authenticate');
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/UserProfileSummary'
+ *                 $ref: '#/components/schemas/UserSummary'
  *       401:
  *         description: Unauthorized
  */

@@ -1,6 +1,7 @@
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
 const request = require('supertest');
+const jwt = require('jsonwebtoken');
 const User = require('../../../auth-service/src/models/user.model');
 const { app, models } = require('../../../auth-service/src/tests/helpers/api-test-utils');
 
@@ -19,12 +20,16 @@ const userPayload = {
 
 const originalFetch = global.fetch;
 
-beforeAll(async () => {
+const mockActiveUser = () => {
   global.fetch = async () => ({
     ok: true,
     status: 200,
     json: async () => ({ isActive: true }),
   });
+};
+
+beforeAll(async () => {
+  mockActiveUser();
   mongod = await MongoMemoryServer.create();
   await mongoose.connect(mongod.getUri());
 });
@@ -36,6 +41,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  mockActiveUser();
   await User.deleteMany({});
   await Post.deleteMany({});
   await request(app).post('/api/v1/auth/register').send(userPayload);
@@ -100,5 +106,43 @@ describe('POST /api/v1/posts', () => {
       .send({ content: 'Hello Breezy!' });
 
     expect(res.status).toBe(401);
+  });
+
+  it('returns 401 on expired token', async () => {
+    const expiredToken = jwt.sign({ sub: new mongoose.Types.ObjectId(), role: 'user' }, 'test_secret', {
+      expiresIn: '-1s',
+    });
+
+    const res = await request(app)
+      .post('/api/v1/posts')
+      .set('Authorization', `Bearer ${expiredToken}`)
+      .send({ content: 'Hello Breezy!' });
+
+    expect(res.status).toBe(401);
+  });
+
+  it.each([403, 404])('returns %s from auth-service active verification', async (status) => {
+    global.fetch = async () => ({ ok: false, status, json: async () => ({ error: 'auth failed' }) });
+
+    const res = await request(app)
+      .post('/api/v1/posts')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: 'Hello Breezy!' });
+
+    expect(res.status).toBe(status);
+  });
+
+  it.each([
+    ['network rejection', async () => Promise.reject(new Error('network down'))],
+    ['auth-service 5xx', async () => ({ ok: false, status: 503, json: async () => ({ error: 'down' }) })],
+  ])('returns 502 when auth-service active verification has %s', async (_caseName, fetchImpl) => {
+    global.fetch = fetchImpl;
+
+    const res = await request(app)
+      .post('/api/v1/posts')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: 'Hello Breezy!' });
+
+    expect(res.status).toBe(502);
   });
 });

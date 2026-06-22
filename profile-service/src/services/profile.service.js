@@ -1,6 +1,12 @@
 const mongoose = require('mongoose');
 const Profile = require('../models/profile.model');
 
+const toPublicProfile = (profile, userId) => ({
+  userId,
+  bio: profile?.bio ?? '',
+  avatarUrl: profile?.avatar ?? '',
+});
+
 const getProfile = async (userId) => {
   if (!mongoose.Types.ObjectId.isValid(userId)) {
     const err = new Error('User not found');
@@ -10,11 +16,7 @@ const getProfile = async (userId) => {
 
   const profile = await Profile.findOne({ userId });
 
-  return {
-    userId,
-    bio: profile?.bio ?? '',
-    avatar: profile?.avatar ?? '',
-  };
+  return toPublicProfile(profile, userId);
 };
 
 const getOwnProfile = async (userId, user) => {
@@ -25,14 +27,14 @@ const getOwnProfile = async (userId, user) => {
     username: user.username,
     email: user.email,
     bio: profile?.bio ?? '',
-    avatar: profile?.avatar ?? '',
+    avatarUrl: profile?.avatar ?? '',
   };
 };
 
-const updateProfile = async (userId, { bio, avatar }) => {
+const updateProfile = async (userId, { bio, avatarUrl }) => {
   const update = {};
   if (bio !== undefined) update.bio = bio;
-  if (avatar !== undefined) update.avatar = avatar;
+  if (avatarUrl !== undefined) update.avatar = avatarUrl;
 
   const profile = await Profile.findOneAndUpdate(
     { userId },
@@ -40,11 +42,7 @@ const updateProfile = async (userId, { bio, avatar }) => {
     { upsert: true, returnDocument: 'after', runValidators: true },
   );
 
-  return {
-    userId: profile.userId,
-    bio: profile.bio,
-    avatar: profile.avatar,
-  };
+  return toPublicProfile(profile, profile.userId);
 };
 
 module.exports = { getProfile, getOwnProfile, updateProfile };

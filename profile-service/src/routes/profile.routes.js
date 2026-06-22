@@ -16,9 +16,6 @@ const { validate, updateProfileSchema } = require('../middlewares/validate');
  *         username:
  *           type: string
  *           example: janedoe
- *         displayName:
- *           type: string
- *           example: Jane Doe
  *         bio:
  *           type: string
  *           example: Explorer of the digital frontier.
@@ -26,22 +23,9 @@ const { validate, updateProfileSchema } = require('../middlewares/validate');
  *           type: string
  *           format: uri
  *           example: https://example.com/jane.png
- *         followerCount:
- *           type: integer
- *           example: 150
- *         followingCount:
- *           type: integer
- *           example: 230
- *         postCount:
- *           type: integer
- *           example: 42
  *     UpdateProfileRequest:
  *       type: object
  *       properties:
- *         displayName:
- *           type: string
- *           maxLength: 50
- *           example: Jane Doe
  *         bio:
  *           type: string
  *           maxLength: 160

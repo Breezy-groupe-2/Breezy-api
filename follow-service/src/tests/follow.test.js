@@ -13,6 +13,7 @@ let mongod;
 let tokenA;
 let userA;
 let userB;
+const originalFetch = global.fetch;
 
 const createUser = async (suffix, overrides = {}) =>
   User.create({
@@ -27,28 +28,29 @@ const tokenFor = (user) =>
     expiresIn: '15m',
   });
 
+const mockActiveUser = () => {
+  global.fetch = async () => ({ ok: true, status: 200, json: async () => ({}) });
+};
+
 beforeAll(async () => {
+  mockActiveUser();
   mongod = await MongoMemoryServer.create();
   await mongoose.connect(mongod.getUri());
 });
 
 afterAll(async () => {
+  global.fetch = originalFetch;
   await mongoose.disconnect();
   await mongod.stop();
 });
 
 beforeEach(async () => {
+  mockActiveUser();
   await User.deleteMany({});
   await Follow.deleteMany({});
 
-  userA = await createUser('A', {
-    displayName: 'User A',
-    avatarUrl: 'https://example.com/a.png',
-  });
-  userB = await createUser('B', {
-    displayName: 'User B',
-    avatarUrl: 'https://example.com/b.png',
-  });
+  userA = await createUser('A');
+  userB = await createUser('B');
   tokenA = tokenFor(userA);
 });
 
@@ -97,6 +99,59 @@ describe('follow routes', () => {
     expect(res.status).toBe(401);
   });
 
+  it('returns 401 for malformed tokens', async () => {
+    const res = await request(app)
+      .post(`/api/v1/users/${userB._id}/follow`)
+      .set('Authorization', 'Bearer not-a-jwt');
+
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 401 for expired tokens', async () => {
+    const expiredToken = jwt.sign({ sub: userA._id.toString(), role: userA.role }, process.env.JWT_SECRET, {
+      expiresIn: '-1s',
+    });
+
+    const res = await request(app)
+      .post(`/api/v1/users/${userB._id}/follow`)
+      .set('Authorization', `Bearer ${expiredToken}`);
+
+    expect(res.status).toBe(401);
+  });
+
+  it.each(['inactive', 'banned', 'suspended'])('returns 403 when auth-service marks user %s', async () => {
+    global.fetch = async () => ({ ok: false, status: 403, json: async () => ({ error: 'Forbidden' }) });
+
+    const res = await request(app)
+      .post(`/api/v1/users/${userB._id}/follow`)
+      .set('Authorization', `Bearer ${tokenA}`);
+
+    expect(res.status).toBe(403);
+  });
+
+  it('returns 404 when auth-service cannot find the authenticated user', async () => {
+    global.fetch = async () => ({ ok: false, status: 404, json: async () => ({ error: 'User not found' }) });
+
+    const res = await request(app)
+      .post(`/api/v1/users/${userB._id}/follow`)
+      .set('Authorization', `Bearer ${tokenA}`);
+
+    expect(res.status).toBe(404);
+  });
+
+  it.each([
+    ['network rejection', async () => Promise.reject(new Error('network down'))],
+    ['auth-service 5xx', async () => ({ ok: false, status: 503, json: async () => ({ error: 'down' }) })],
+  ])('returns 502 when auth-service active verification has %s', async (_caseName, fetchImpl) => {
+    global.fetch = fetchImpl;
+
+    const res = await request(app)
+      .post(`/api/v1/users/${userB._id}/follow`)
+      .set('Authorization', `Bearer ${tokenA}`);
+
+    expect(res.status).toBe(502);
+  });
+
   it('unfollows another user and removes the feed compatibility following entry', async () => {
     await request(app)
       .post(`/api/v1/users/${userB._id}/follow`)
@@ -121,17 +176,23 @@ describe('follow routes', () => {
     const res = await request(app).get(`/api/v1/users/${userB._id}/followers`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([
-      {
-        id: userA._id.toString(),
-        username: 'userA',
-        displayName: 'User A',
-        avatarUrl: 'https://example.com/a.png',
-      },
-    ]);
+    expect(res.body).toEqual([{ id: userA._id.toString(), username: 'userA' }]);
     expect(res.body[0]).not.toHaveProperty('email');
     expect(res.body[0]).not.toHaveProperty('password');
     expect(res.body[0]).not.toHaveProperty('passwordHash');
+    expect(res.body[0]).not.toHaveProperty('displayName');
+    expect(res.body[0]).not.toHaveProperty('avatarUrl');
+  });
+
+  it('keeps follow read endpoints public when auth-service is unavailable', async () => {
+    await Follow.create({ follower: userA._id, following: userB._id });
+    global.fetch = async () => Promise.reject(new Error('auth-service unavailable'));
+
+    const followers = await request(app).get(`/api/v1/users/${userB._id}/followers`);
+    const following = await request(app).get(`/api/v1/users/${userA._id}/following`);
+
+    expect(followers.status).toBe(200);
+    expect(following.status).toBe(200);
   });
 
   it('lists following without leaking private fields', async () => {
@@ -142,17 +203,12 @@ describe('follow routes', () => {
     const res = await request(app).get(`/api/v1/users/${userA._id}/following`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([
-      {
-        id: userB._id.toString(),
-        username: 'userB',
-        displayName: 'User B',
-        avatarUrl: 'https://example.com/b.png',
-      },
-    ]);
+    expect(res.body).toEqual([{ id: userB._id.toString(), username: 'userB' }]);
     expect(res.body[0]).not.toHaveProperty('email');
     expect(res.body[0]).not.toHaveProperty('password');
     expect(res.body[0]).not.toHaveProperty('passwordHash');
+    expect(res.body[0]).not.toHaveProperty('displayName');
+    expect(res.body[0]).not.toHaveProperty('avatarUrl');
   });
 
   it('rejects follow actions from inactive users', async () => {

@@ -9,13 +9,14 @@
     "npm": ">=10"
   },
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js",
+    "start": "docker compose up",
+    "dev": "docker compose up --build",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run --passWithNoTests",
     "test:acceptance": "node scripts/acceptance-summary.js",
+    "test:gateway-smoke": "node scripts/gateway-smoke.js",
     "commit": "cz",
     "prepare": "husky"
   },

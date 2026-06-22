@@ -3,6 +3,7 @@ const { likePost, unlikePost } = require('../../controllers/like.controller');
 const {
   createPost,
   getOwnPosts,
+  getPostsByAuthors,
   getPostsByUser,
   updatePost,
 } = require('../../controllers/post.controller');
@@ -218,6 +219,7 @@ const router = Router();
 
 router.get('/me', authenticate, getOwnPosts);
 router.get('/user/:userId', getPostsByUser);
+router.get('/', getPostsByAuthors);
 router.post('/', authenticate, validate(postContentSchema), createPost);
 router.put('/:id', authenticate, validate(postContentSchema), updatePost);
 router.post('/:id/like', authenticate, likePost);

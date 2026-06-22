@@ -2,7 +2,7 @@ const { z } = require('zod');
 
 const updateProfileSchema = z.object({
   bio: z.string().max(160, 'Bio must be at most 160 characters').optional(),
-  avatar: z.string().url('Avatar must be a valid URL').optional(),
+  avatarUrl: z.string().url('Avatar URL must be a valid URL').optional(),
 });
 
 const validate = (schema) => (req, res, next) => {

@@ -17,12 +17,16 @@ const postId = new mongoose.Types.ObjectId().toString();
 
 const originalFetch = global.fetch;
 
-beforeAll(async () => {
+const mockActiveUser = () => {
   global.fetch = async () => ({
     ok: true,
     status: 200,
     json: async () => ({ isActive: true }),
   });
+};
+
+beforeAll(async () => {
+  mockActiveUser();
   mongod = await MongoMemoryServer.create();
   await mongoose.connect(mongod.getUri());
 });
@@ -34,6 +38,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  mockActiveUser();
   await Comment.deleteMany({});
   await Reply.deleteMany({});
 
@@ -69,6 +74,31 @@ describe('POST /api/v1/comments/:commentId/replies', () => {
       .send({ content: 'A reply' });
 
     expect(res.status).toBe(401);
+  });
+
+  it.each([403, 404])('returns %s from auth-service active verification', async (status) => {
+    global.fetch = async () => ({ ok: false, status, json: async () => ({ error: 'auth failed' }) });
+
+    const res = await request(app)
+      .post(`/api/v1/comments/${commentId}/replies`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: 'A reply' });
+
+    expect(res.status).toBe(status);
+  });
+
+  it.each([
+    ['network rejection', async () => Promise.reject(new Error('network down'))],
+    ['auth-service 5xx', async () => ({ ok: false, status: 503, json: async () => ({ error: 'down' }) })],
+  ])('returns 502 when auth-service active verification has %s', async (_caseName, fetchImpl) => {
+    global.fetch = fetchImpl;
+
+    const res = await request(app)
+      .post(`/api/v1/comments/${commentId}/replies`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: 'A reply' });
+
+    expect(res.status).toBe(502);
   });
 
   it.each([

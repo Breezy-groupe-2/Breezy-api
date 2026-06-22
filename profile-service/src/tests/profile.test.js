@@ -16,8 +16,12 @@ const makeToken = (id = userId) =>
     expiresIn: '1h',
   });
 
+const mockActiveUser = () => {
+  global.fetch = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
+};
+
 beforeAll(async () => {
-  global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
+  mockActiveUser();
   mongod = await MongoMemoryServer.create();
   await mongoose.connect(mongod.getUri());
 });
@@ -30,6 +34,7 @@ afterAll(async () => {
 afterEach(async () => {
   await Profile.deleteMany({});
   vi.clearAllMocks();
+  mockActiveUser();
 });
 
 describe('GET /api/v1/users/:id', () => {
@@ -37,7 +42,7 @@ describe('GET /api/v1/users/:id', () => {
     const res = await request(app).get(`/api/v1/users/${userId}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ userId: userId.toString(), bio: '', avatar: '' });
+    expect(res.body).toEqual({ userId: userId.toString(), bio: '', avatarUrl: '' });
   });
 
   it('returns 404 for invalid userId format', async () => {
@@ -56,8 +61,9 @@ describe('GET /api/v1/users/:id', () => {
     expect(res.body).toMatchObject({
       userId: userId.toString(),
       bio: 'Hello world',
-      avatar: 'https://example.com/avatar.jpg',
+      avatarUrl: 'https://example.com/avatar.jpg',
     });
+    expect(res.body).not.toHaveProperty('avatar');
   });
 });
 
@@ -66,6 +72,27 @@ describe('GET /api/v1/users/me', () => {
     const res = await request(app).get('/api/v1/users/me');
 
     expect(res.status).toBe(401);
+  });
+
+  it.each([403, 404])('returns %s from auth-service active verification', async (status) => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status, json: async () => ({ error: 'auth failed' }) });
+    const token = makeToken();
+
+    const res = await request(app).get('/api/v1/users/me').set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(status);
+  });
+
+  it.each([
+    ['network rejection', async () => Promise.reject(new Error('network down'))],
+    ['auth-service 5xx', async () => ({ ok: false, status: 503, json: async () => ({ error: 'down' }) })],
+  ])('returns 502 when auth-service active verification has %s', async (_caseName, fetchImpl) => {
+    global.fetch = vi.fn().mockImplementation(fetchImpl);
+    const token = makeToken();
+
+    const res = await request(app).get('/api/v1/users/me').set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(502);
   });
 
   it('returns own profile with user info from token', async () => {
@@ -80,7 +107,7 @@ describe('GET /api/v1/users/me', () => {
       username: 'testuser',
       email: 'test@example.com',
       bio: 'My bio',
-      avatar: '',
+      avatarUrl: '',
     });
   });
 
@@ -90,7 +117,8 @@ describe('GET /api/v1/users/me', () => {
     const res = await request(app).get('/api/v1/users/me').set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ bio: '', avatar: '' });
+    expect(res.body).toMatchObject({ bio: '', avatarUrl: '' });
+    expect(res.body).not.toHaveProperty('avatar');
   });
 });
 
@@ -101,9 +129,9 @@ describe('PUT /api/v1/users/me', () => {
     expect(res.status).toBe(401);
   });
 
-  it('creates profile with bio and avatar', async () => {
+  it('creates profile with bio and avatarUrl', async () => {
     const token = makeToken();
-    const payload = { bio: 'Hello!', avatar: 'https://example.com/avatar.jpg' };
+    const payload = { bio: 'Hello!', avatarUrl: 'https://example.com/avatar.jpg' };
 
     const res = await request(app)
       .put('/api/v1/users/me')
@@ -111,7 +139,11 @@ describe('PUT /api/v1/users/me', () => {
       .send(payload);
 
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ bio: 'Hello!', avatar: 'https://example.com/avatar.jpg' });
+    expect(res.body).toMatchObject({ bio: 'Hello!', avatarUrl: 'https://example.com/avatar.jpg' });
+    expect(res.body).not.toHaveProperty('avatar');
+
+    const storedProfile = await Profile.findOne({ userId });
+    expect(storedProfile.avatar).toBe('https://example.com/avatar.jpg');
   });
 
   it('updates only bio when avatar is omitted', async () => {
@@ -125,7 +157,8 @@ describe('PUT /api/v1/users/me', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.bio).toBe('New bio');
-    expect(res.body.avatar).toBe('https://example.com/old.jpg');
+    expect(res.body.avatarUrl).toBe('https://example.com/old.jpg');
+    expect(res.body).not.toHaveProperty('avatar');
   });
 
   it('returns 400 when bio exceeds 160 characters', async () => {
@@ -140,13 +173,13 @@ describe('PUT /api/v1/users/me', () => {
     expect(res.body).toHaveProperty('error', 'Validation failed');
   });
 
-  it('returns 400 when avatar is not a valid URL', async () => {
+  it('returns 400 when avatarUrl is not a valid URL', async () => {
     const token = makeToken();
 
     const res = await request(app)
       .put('/api/v1/users/me')
       .set('Authorization', `Bearer ${token}`)
-      .send({ avatar: 'not-a-url' });
+      .send({ avatarUrl: 'not-a-url' });
 
     expect(res.status).toBe(400);
     expect(res.body).toHaveProperty('error', 'Validation failed');
