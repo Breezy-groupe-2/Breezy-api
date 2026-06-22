@@ -1,5 +1,12 @@
+const mongoose = require('mongoose');
 const Comment = require('../models/comment.model');
 const Reply = require('../models/reply.model');
+
+const invalidIdError = () => {
+  const err = new Error('Invalid id format');
+  err.status = 400;
+  return err;
+};
 
 const serializeAuthor = (author) => ({ id: author.toString() });
 
@@ -12,6 +19,10 @@ const serializeReply = (reply) => ({
 });
 
 const addComment = async ({ postId, content, authorId }) => {
+  if (!mongoose.Types.ObjectId.isValid(postId)) {
+    throw invalidIdError();
+  }
+
   const comment = await Comment.create({ postId, content, author: authorId });
   return {
     id: comment._id,
@@ -23,6 +34,10 @@ const addComment = async ({ postId, content, authorId }) => {
 };
 
 const getComments = async (postId, { limit = 50 } = {}) => {
+  if (!mongoose.Types.ObjectId.isValid(postId)) {
+    throw invalidIdError();
+  }
+
   const comments = await Comment.find({ postId }).sort({ createdAt: 1 }).limit(limit);
   const repliesByCommentId = new Map();
   const commentIds = comments.map((comment) => comment._id);
