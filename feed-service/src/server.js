@@ -1,7 +1,6 @@
 const app = require('./app');
+const { env } = require('./config/env');
 
-const PORT = process.env.PORT || 3004;
-
-app.listen(PORT, () => {
-  console.log(`📰 Feed Service running on port ${PORT}`);
+app.listen(env.port, () => {
+  console.log(`Feed Service running on port ${env.port}`);
 });

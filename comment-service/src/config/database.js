@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
+const { env } = require('./env');
 
 const connectDB = async () => {
-  const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/breezy_comments';
-  await mongoose.connect(uri);
+  await mongoose.connect(env.mongodbUri);
   console.log('MongoDB connected (comment-service)');
 };
 

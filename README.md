@@ -21,6 +21,28 @@ Required variables:
 - `MONGODB_URI`: MongoDB connection string
 - `JWT_SECRET`: secret used to sign JWTs
 
+Set `NODE_ENV=development` explicitly for local development. `NODE_ENV` has no default, so an omitted value stops every service before startup rather than enabling development credentials.
+
+Generate independent local credentials rather than committing them:
+
+```bash
+openssl rand -hex 16  # Mongo root username
+openssl rand -hex 32  # Mongo root password
+openssl rand -hex 32  # JWT signing secret
+```
+
+Set `MONGO_ROOT_USER`, `MONGO_ROOT_PASSWORD`, and `JWT_SECRET` in `.env`. Build each Mongo URI from those values, URL-encoding the username and password when necessary, and set:
+
+- `MONGODB_URI` for auth-service
+- `POST_SERVICE_MONGODB_URI` for post-service
+- `COMMENT_SERVICE_MONGODB_URI` for comment-service
+- `FOLLOW_SERVICE_MONGODB_URI` for follow-service
+- `FEED_SERVICE_MONGODB_URI` for feed-service
+
+Each service validates `NODE_ENV`, `PORT`, `JWT_SECRET`, and its database URI before startup. Production startup fails when credentials are absent, too short, malformed, or recognizable placeholders.
+
+> Security notice: if any environment ever used repository-provided JWT or Mongo administrative defaults, rotate both credentials in that environment immediately and invalidate all outstanding access tokens. Removing defaults from Git does not rotate deployed credentials.
+
 ## Docker
 
 The local MongoDB databases, service containers, and Nginx gateway are defined in Docker Compose.
@@ -40,6 +62,8 @@ npm run test:gateway-smoke
 ```
 
 Local gateway smoke requires access to the Docker daemon. In environments where `/var/run/docker.sock` is not accessible, the script cannot start or clean up containers; use `docker compose config --quiet`, `npm test`, and `npm run lint` as the available non-Docker checks until Docker socket permission is restored.
+
+Compose uses required interpolation for credentials and exits before startup when one is missing.
 
 ## Tooling Decisions
 

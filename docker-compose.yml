@@ -1,12 +1,10 @@
 services:
-  # 🐘 Database for Auth Service
   auth-db:
     image: mongo:latest
-    ports:
-      - '27017:27017'
+    container_name: breezy-auth-db
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-admin123}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?MONGO_ROOT_USER is required}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
       MONGO_INITDB_DATABASE: breezy_auth
     volumes:
       - auth_db_data:/data/db
@@ -18,7 +16,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # 🔐 Auth Service
   auth-service:
     build:
       context: ./auth-service
@@ -28,8 +25,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3001
-      MONGODB_URI: ${MONGODB_URI:-mongodb://admin:admin123@auth-db:27017/breezy_auth?authSource=admin}
-      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      MONGODB_URI: ${MONGODB_URI:?MONGODB_URI is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_EXPIRE: ${JWT_EXPIRE:-7d}
     depends_on:
       auth-db:
@@ -38,7 +35,6 @@ services:
       - breezy-network
     restart: unless-stopped
 
-  # 🌐 API Gateway
   api-gateway:
     image: nginx:alpine
     ports:
@@ -57,7 +53,6 @@ services:
       - breezy-network
     restart: unless-stopped
 
-  # 📝 Post Service (placeholder)
   post-service:
     build:
       context: ./post-service
@@ -67,8 +62,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3002
-      MONGODB_URI: ${POST_SERVICE_MONGODB_URI:-mongodb://admin:admin123@post-db:27017/breezy_posts?authSource=admin}
-      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      MONGODB_URI: ${POST_SERVICE_MONGODB_URI:?POST_SERVICE_MONGODB_URI is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
     depends_on:
       - post-db
     networks:
@@ -77,9 +72,10 @@ services:
 
   post-db:
     image: mongo:latest
+    container_name: breezy-post-db
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-admin123}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?MONGO_ROOT_USER is required}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
       MONGO_INITDB_DATABASE: breezy_posts
     volumes:
       - post_db_data:/data/db
@@ -87,7 +83,6 @@ services:
       - breezy-network
     restart: unless-stopped
 
-  # 💬 Comment Service (placeholder)
   comment-service:
     build:
       context: ./comment-service
@@ -97,8 +92,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3003
-      MONGODB_URI: ${COMMENT_SERVICE_MONGODB_URI:-mongodb://admin:admin123@comment-db:27017/breezy_comments?authSource=admin}
-      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      MONGODB_URI: ${COMMENT_SERVICE_MONGODB_URI:?COMMENT_SERVICE_MONGODB_URI is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
     depends_on:
       - comment-db
     networks:
@@ -107,9 +102,10 @@ services:
 
   comment-db:
     image: mongo:latest
+    container_name: breezy-comment-db
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-admin123}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?MONGO_ROOT_USER is required}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
       MONGO_INITDB_DATABASE: breezy_comments
     volumes:
       - comment_db_data:/data/db
@@ -117,7 +113,6 @@ services:
       - breezy-network
     restart: unless-stopped
 
-  # 🤝 Follow Service
   follow-service:
     build:
       context: ./follow-service
@@ -127,8 +122,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3006
-      MONGODB_URI: ${FOLLOW_SERVICE_MONGODB_URI:-mongodb://admin:admin123@auth-db:27017/breezy_auth?authSource=admin}
-      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      MONGODB_URI: ${FOLLOW_SERVICE_MONGODB_URI:?FOLLOW_SERVICE_MONGODB_URI is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
     depends_on:
       auth-db:
         condition: service_healthy
@@ -136,7 +131,6 @@ services:
       - breezy-network
     restart: unless-stopped
 
-  # 📰 Feed Service
   feed-service:
     build:
       context: ./feed-service
@@ -146,8 +140,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3004
-      MONGODB_URI: ${FEED_SERVICE_MONGODB_URI:-mongodb://admin:admin123@auth-db:27017/breezy_auth?authSource=admin}
-      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      MONGODB_URI: ${FEED_SERVICE_MONGODB_URI:?FEED_SERVICE_MONGODB_URI is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
     depends_on:
       auth-db:
         condition: service_healthy
@@ -155,7 +149,6 @@ services:
       - breezy-network
     restart: unless-stopped
 
-  # 👤 Profile Service
   profile-service:
     build:
       context: ./profile-service
@@ -165,8 +158,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3007
-      MONGODB_URI: ${PROFILE_SERVICE_MONGODB_URI:-mongodb://admin:admin123@profile-db:27017/breezy_profiles?authSource=admin}
-      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      MONGODB_URI: ${PROFILE_SERVICE_MONGODB_URI:?PROFILE_SERVICE_MONGODB_URI is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       AUTH_SERVICE_URL: http://auth-service:3001
     depends_on:
       - profile-db
@@ -177,9 +170,10 @@ services:
 
   profile-db:
     image: mongo:latest
+    container_name: breezy-profile-db
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-admin123}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?MONGO_ROOT_USER is required}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
       MONGO_INITDB_DATABASE: breezy_profiles
     volumes:
       - profile_db_data:/data/db
@@ -187,7 +181,6 @@ services:
       - breezy-network
     restart: unless-stopped
 
-  # 📖 Swagger Documentation Service
   swagger-service:
     build:
       context: ./swagger-service
