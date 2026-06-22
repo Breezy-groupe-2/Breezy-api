@@ -202,6 +202,17 @@ describe('PATCH /api/v1/users/me/preferences', () => {
     expect(res.status).toBe(401);
   });
 
+  it('returns 404 when the authenticated user no longer exists', async () => {
+    await User.deleteOne({ email: validPayload.email });
+
+    const res = await request(app)
+      .patch('/api/v1/users/me/preferences')
+      .set('Authorization', `Bearer ${token}`)
+      .send(validTheme);
+
+    expect(res.status).toBe(404);
+  });
+
   it('returns 400 when theme mode is unsupported', async () => {
     const res = await request(app)
       .patch('/api/v1/users/me/preferences')
