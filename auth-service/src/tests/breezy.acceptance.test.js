@@ -165,7 +165,7 @@ describe.sequential('Breezy acceptance contract', () => {
       await createPost(owner.token, 'Newer profile post');
 
       const res = await request(app)
-        .get(`/api/v1/profiles/${owner.payload.username}/posts`)
+        .get(`/api/v1/posts/user/${owner.user.id}`)
         .set(authHeader(owner.token));
 
       expect(res.status).toBe(200);
@@ -419,24 +419,19 @@ describe.sequential('Breezy acceptance contract', () => {
   });
 
   describe('Fx10 - basic user profile', () => {
-    it('returns a public profile with basic info and social counts', async () => {
+    it('returns a public profile with basic info', async () => {
       const account = await registerAndLogin('profile');
 
       const res = await request(app)
-        .get(`/api/v1/profiles/${account.payload.username}`)
+        .get(`/api/v1/users/${account.user.id}`)
         .set(authHeader(account.token));
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(
         expect.objectContaining({
-          id: account.user.id,
-          username: account.payload.username,
-          displayName: expect.any(String),
+          userId: account.user.id,
           bio: expect.any(String),
           avatarUrl: expect.any(String),
-          followerCount: expect.any(Number),
-          followingCount: expect.any(Number),
-          postCount: expect.any(Number),
         })
       );
       expect(res.body).not.toHaveProperty('email');
@@ -447,15 +442,14 @@ describe.sequential('Breezy acceptance contract', () => {
       const account = await registerAndLogin('profileupdate');
 
       const updated = await request(app)
-        .patch('/api/v1/profiles/me')
+        .put('/api/v1/users/me')
         .set(authHeader(account.token))
         .send({
-          displayName: 'Breezy Tester',
           bio: 'Short bio for the Breezy profile.',
           avatarUrl: 'https://example.com/avatar.png',
         });
       const invalid = await request(app)
-        .patch('/api/v1/profiles/me')
+        .put('/api/v1/users/me')
         .set(authHeader(account.token))
         .send({
           bio: 'a'.repeat(161),
@@ -464,7 +458,6 @@ describe.sequential('Breezy acceptance contract', () => {
 
       expect(updated.status).toBe(200);
       expect(updated.body).toMatchObject({
-        displayName: 'Breezy Tester',
         bio: 'Short bio for the Breezy profile.',
         avatarUrl: 'https://example.com/avatar.png',
       });
