@@ -115,6 +115,16 @@ describe('POST /api/v1/comments/:commentId/replies', () => {
     expect(res.body).toMatchObject({ error: 'Validation failed' });
     expect(res.body.details[0]).toHaveProperty('field', 'content');
   });
+
+  it('returns 400 when commentId is malformed', async () => {
+    const res = await request(app)
+      .post('/api/v1/comments/not-an-id/replies')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: 'A reply' });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ error: 'Invalid id format' });
+  });
 });
 
 describe('GET /api/v1/comments/:commentId/replies', () => {
@@ -141,5 +151,12 @@ describe('GET /api/v1/comments/:commentId/replies', () => {
     expect(res.body).toHaveLength(2);
     expect(res.body[0].content).toBe('First reply');
     expect(res.body[1].content).toBe('Second reply');
+  });
+
+  it('returns 400 when commentId is malformed', async () => {
+    const res = await request(app).get('/api/v1/comments/not-an-id/replies');
+
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ error: 'Invalid id format' });
   });
 });
