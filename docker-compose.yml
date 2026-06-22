@@ -16,21 +16,27 @@ services:
       timeout: 5s
       retries: 5
 
-  auth-service:
+  auth-profile-service:
     build:
-      context: ./auth-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: auth-profile.Dockerfile
     ports:
       - '3001:3001'
+      - '3007:3007'
     environment:
       NODE_ENV: production
-      PORT: 3001
-      MONGODB_URI: ${MONGODB_URI:?MONGODB_URI is required}
+      AUTH_SERVICE_PORT: 3001
+      PROFILE_SERVICE_PORT: 3007
+      AUTH_SERVICE_MONGODB_URI: ${MONGODB_URI:?MONGODB_URI is required}
+      PROFILE_SERVICE_MONGODB_URI: ${PROFILE_SERVICE_MONGODB_URI:?PROFILE_SERVICE_MONGODB_URI is required}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_EXPIRE: ${JWT_EXPIRE:-7d}
+      AUTH_SERVICE_URL: http://localhost:3001
     depends_on:
       auth-db:
         condition: service_healthy
+      profile-db:
+        condition: service_started
     networks:
       - breezy-network
     restart: unless-stopped
@@ -42,12 +48,9 @@ services:
     volumes:
       - ./api-gateway/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - auth-service
+      - auth-profile-service
       - post-service
-      - comment-service
-      - follow-service
-      - feed-service
-      - profile-service
+      - comment-feed-follow-service
       - swagger-service
     networks:
       - breezy-network
@@ -64,6 +67,7 @@ services:
       PORT: 3002
       MONGODB_URI: ${POST_SERVICE_MONGODB_URI:?POST_SERVICE_MONGODB_URI is required}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      AUTH_SERVICE_URL: http://auth-profile-service:3001
     depends_on:
       - post-db
     networks:
@@ -83,19 +87,31 @@ services:
       - breezy-network
     restart: unless-stopped
 
-  comment-service:
+  comment-feed-follow-service:
     build:
-      context: ./comment-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: comment-feed-follow.Dockerfile
     ports:
       - '3003:3003'
+      - '3004:3004'
+      - '3006:3006'
     environment:
       NODE_ENV: production
-      PORT: 3003
-      MONGODB_URI: ${COMMENT_SERVICE_MONGODB_URI:?COMMENT_SERVICE_MONGODB_URI is required}
+      COMMENT_SERVICE_PORT: 3003
+      FEED_SERVICE_PORT: 3004
+      FOLLOW_SERVICE_PORT: 3006
+      COMMENT_SERVICE_MONGODB_URI: ${COMMENT_SERVICE_MONGODB_URI:?COMMENT_SERVICE_MONGODB_URI is required}
+      FEED_SERVICE_MONGODB_URI: ${FEED_SERVICE_MONGODB_URI:?FEED_SERVICE_MONGODB_URI is required}
+      FOLLOW_SERVICE_MONGODB_URI: ${FOLLOW_SERVICE_MONGODB_URI:?FOLLOW_SERVICE_MONGODB_URI is required}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      AUTH_SERVICE_URL: http://auth-profile-service:3001
+      FOLLOW_SERVICE_URL: http://localhost:3006
+      POST_SERVICE_URL: http://post-service:3002
     depends_on:
-      - comment-db
+      auth-db:
+        condition: service_healthy
+      comment-db:
+        condition: service_started
     networks:
       - breezy-network
     restart: unless-stopped
@@ -109,61 +125,6 @@ services:
       MONGO_INITDB_DATABASE: breezy_comments
     volumes:
       - comment_db_data:/data/db
-    networks:
-      - breezy-network
-    restart: unless-stopped
-
-  follow-service:
-    build:
-      context: ./follow-service
-      dockerfile: Dockerfile
-    ports:
-      - '3006:3006'
-    environment:
-      NODE_ENV: production
-      PORT: 3006
-      MONGODB_URI: ${FOLLOW_SERVICE_MONGODB_URI:?FOLLOW_SERVICE_MONGODB_URI is required}
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
-    depends_on:
-      auth-db:
-        condition: service_healthy
-    networks:
-      - breezy-network
-    restart: unless-stopped
-
-  feed-service:
-    build:
-      context: ./feed-service
-      dockerfile: Dockerfile
-    ports:
-      - '3004:3004'
-    environment:
-      NODE_ENV: production
-      PORT: 3004
-      MONGODB_URI: ${FEED_SERVICE_MONGODB_URI:?FEED_SERVICE_MONGODB_URI is required}
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
-    depends_on:
-      auth-db:
-        condition: service_healthy
-    networks:
-      - breezy-network
-    restart: unless-stopped
-
-  profile-service:
-    build:
-      context: ./profile-service
-      dockerfile: Dockerfile
-    ports:
-      - '3007:3007'
-    environment:
-      NODE_ENV: production
-      PORT: 3007
-      MONGODB_URI: ${PROFILE_SERVICE_MONGODB_URI:?PROFILE_SERVICE_MONGODB_URI is required}
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
-      AUTH_SERVICE_URL: http://auth-service:3001
-    depends_on:
-      - profile-db
-      - auth-service
     networks:
       - breezy-network
     restart: unless-stopped

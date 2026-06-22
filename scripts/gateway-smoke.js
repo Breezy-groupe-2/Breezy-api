@@ -332,6 +332,7 @@ const main = async () => {
     const up = runCompose('compose up', 'up', '-d', '--build');
     if (!up.pass) throw new Error('docker compose up -d --build failed');
 
+    await sleep(5000);
     await runHttpSmoke();
     overallPass = routes.filter((route) => route.critical !== false).every((route) => route.pass);
     if (!overallPass) throw new Error('One or more gateway routes failed');
