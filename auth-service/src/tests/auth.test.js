@@ -28,6 +28,13 @@ const validPayload = {
   password: 'Password123',
 };
 
+const validTheme = {
+  theme: {
+    mode: 'dark',
+    accentColor: '#1DA1F2',
+  },
+};
+
 describe('POST /api/v1/auth/register', () => {
   it('returns 201 and user data on valid input', async () => {
     const res = await request(app).post('/api/v1/auth/register').send(validPayload);
@@ -139,6 +146,15 @@ describe('GET /api/v1/auth/me', () => {
     expect(res.body).toMatchObject({ username: validPayload.username, email: validPayload.email });
   });
 
+  it('returns default theme preferences when stored preferences are missing', async () => {
+    await User.updateOne({ email: validPayload.email }, { $unset: { preferences: '' } });
+
+    const res = await request(app).get('/api/v1/auth/me').set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.preferences.theme).toEqual({ mode: 'light', accentColor: '#1DA1F2' });
+  });
+
   it('returns 200 for the users/me alias used by the web client', async () => {
     const res = await request(app).get('/api/v1/users/me').set('Authorization', `Bearer ${token}`);
 
@@ -156,5 +172,75 @@ describe('GET /api/v1/auth/me', () => {
       .get('/api/v1/auth/me')
       .set('Authorization', 'Bearer invalidtoken');
     expect(res.status).toBe(401);
+  });
+});
+
+describe('PATCH /api/v1/users/me/preferences', () => {
+  let token;
+
+  beforeEach(async () => {
+    await request(app).post('/api/v1/auth/register').send(validPayload);
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: validPayload.email, password: validPayload.password });
+    token = res.body.token;
+  });
+
+  it('returns 200 and saves theme preferences when authenticated', async () => {
+    const res = await request(app)
+      .patch('/api/v1/users/me/preferences')
+      .set('Authorization', `Bearer ${token}`)
+      .send(validTheme);
+
+    expect(res.status).toBe(200);
+    expect(res.body.theme).toEqual(validTheme.theme);
+  });
+
+  it('returns 401 when no token is provided', async () => {
+    const res = await request(app).patch('/api/v1/users/me/preferences').send(validTheme);
+
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 400 when theme mode is unsupported', async () => {
+    const res = await request(app)
+      .patch('/api/v1/users/me/preferences')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ theme: { mode: 'neon', accentColor: '#1DA1F2' } });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Validation failed');
+  });
+
+  it('returns 400 when accent color is not a hex color', async () => {
+    const res = await request(app)
+      .patch('/api/v1/users/me/preferences')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ theme: { mode: 'light', accentColor: 'blue' } });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Validation failed');
+  });
+
+  it('returns 400 when payload contains extra preference keys', async () => {
+    const res = await request(app)
+      .patch('/api/v1/users/me/preferences')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ ...validTheme, layout: 'compact' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('Validation failed');
+  });
+
+  it('returns saved theme preferences from the current-user endpoint', async () => {
+    await request(app)
+      .patch('/api/v1/users/me/preferences')
+      .set('Authorization', `Bearer ${token}`)
+      .send(validTheme);
+
+    const me = await request(app).get('/api/v1/auth/me').set('Authorization', `Bearer ${token}`);
+
+    expect(me.status).toBe(200);
+    expect(me.body.preferences.theme).toEqual(validTheme.theme);
   });
 });

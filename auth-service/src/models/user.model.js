@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { defaultThemePreferences } = require('../config/theme-preferences');
 
 // Temporarily shared with follow-service until feed ownership moves off User.following.
 const userSchema = new mongoose.Schema(
@@ -67,6 +68,21 @@ const userSchema = new mongoose.Schema(
         },
       },
     ],
+    preferences: {
+      theme: {
+        mode: {
+          type: String,
+          enum: ['light', 'dark'],
+          default: defaultThemePreferences.mode,
+        },
+        accentColor: {
+          type: String,
+          match: /^#[0-9A-Fa-f]{6}$/,
+          default: defaultThemePreferences.accentColor,
+        },
+        _id: false,
+      },
+    },
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
   },
   { timestamps: true }

@@ -2,17 +2,26 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user.model');
 const { env } = require('../config/env');
+const { defaultThemePreferences } = require('../config/theme-preferences');
 
 const signToken = (user) =>
   jwt.sign({ sub: user._id, role: user.role }, env.jwtSecret, {
     expiresIn: process.env.JWT_EXPIRES_IN || '15m',
   });
 
+const normalizePreferences = (preferences) => ({
+  theme: {
+    mode: preferences?.theme?.mode ?? defaultThemePreferences.mode,
+    accentColor: preferences?.theme?.accentColor ?? defaultThemePreferences.accentColor,
+  },
+});
+
 const toPublicUser = (user) => ({
   id: user._id,
   username: user.username,
   email: user.email,
   role: user.role,
+  preferences: normalizePreferences(user.preferences),
 });
 
 const checkUserStatus = async (user) => {
@@ -87,4 +96,21 @@ const getMe = async (userId) => {
   return toPublicUser(user);
 };
 
-module.exports = { register, login, getMe };
+const updatePreferences = async (userId, preferences) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    const err = new Error('User not found');
+    err.status = 404;
+    throw err;
+  }
+
+  user.preferences = {
+    theme: preferences.theme,
+  };
+
+  await user.save();
+
+  return normalizePreferences(user.preferences);
+};
+
+module.exports = { register, login, getMe, updatePreferences };
