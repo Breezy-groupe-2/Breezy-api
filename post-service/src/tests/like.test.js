@@ -9,12 +9,14 @@ const { Like, Post } = models;
 let mongod;
 let tokenA;
 let tokenB;
+let tokenC;
 let postId;
 
 process.env.JWT_SECRET = 'test_secret';
 
 const userA = { username: 'userA', email: 'a@example.com', password: 'Password123' };
 const userB = { username: 'userB', email: 'b@example.com', password: 'Password123' };
+const userC = { username: 'userC', email: 'c@example.com', password: 'Password123' };
 
 const originalFetch = global.fetch;
 
@@ -50,6 +52,12 @@ beforeEach(async () => {
     .post('/api/v1/auth/login')
     .send({ email: userB.email, password: userB.password });
   tokenB = resB.body.token;
+
+  await request(app).post('/api/v1/auth/register').send(userC);
+  const resC = await request(app)
+    .post('/api/v1/auth/login')
+    .send({ email: userC.email, password: userC.password });
+  tokenC = resC.body.token;
 
   const postRes = await request(app)
     .post('/api/v1/posts')
@@ -119,5 +127,24 @@ describe('DELETE /api/v1/posts/:id/like', () => {
   it('returns 401 when not authenticated', async () => {
     const res = await request(app).delete(`/api/v1/posts/${postId}/like`);
     expect(res.status).toBe(401);
+  });
+
+  it('counts two different users liking the same post, then one unliking', async () => {
+    const first = await request(app)
+      .post(`/api/v1/posts/${postId}/like`)
+      .set('Authorization', `Bearer ${tokenB}`);
+    const second = await request(app)
+      .post(`/api/v1/posts/${postId}/like`)
+      .set('Authorization', `Bearer ${tokenC}`);
+    const unlike = await request(app)
+      .delete(`/api/v1/posts/${postId}/like`)
+      .set('Authorization', `Bearer ${tokenB}`);
+
+    expect(first.status).toBe(200);
+    expect(first.body.likeCount).toBe(1);
+    expect(second.status).toBe(200);
+    expect(second.body.likeCount).toBe(2);
+    expect(unlike.status).toBe(200);
+    expect(unlike.body.likeCount).toBe(1);
   });
 });

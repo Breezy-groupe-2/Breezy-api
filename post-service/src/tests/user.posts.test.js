@@ -75,6 +75,15 @@ describe('GET /api/v1/posts/user/:userId', () => {
 
     expect(res.status).toBe(404);
   });
+
+  it('returns 200 and empty array for unknown but valid user id', async () => {
+    const unknownUserId = new mongoose.Types.ObjectId();
+
+    const res = await request(app).get(`/api/v1/posts/user/${unknownUserId}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
 });
 
 describe('GET /api/v1/posts?authorIds=<ids>&limit=<n>', () => {
