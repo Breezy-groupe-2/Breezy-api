@@ -65,6 +65,22 @@ describe('GET /api/v1/users/:id', () => {
     });
     expect(res.body).not.toHaveProperty('avatar');
   });
+
+  it('returns public profile without token and never leaks email or passwordHash', async () => {
+    await Profile.create({ userId, bio: 'Public bio', avatar: 'https://example.com/avatar.jpg' });
+
+    const res = await request(app).get(`/api/v1/users/${userId}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      userId: userId.toString(),
+      bio: 'Public bio',
+      avatarUrl: 'https://example.com/avatar.jpg',
+    });
+    expect(res.body).not.toHaveProperty('email');
+    expect(res.body).not.toHaveProperty('passwordHash');
+    expect(res.body).not.toHaveProperty('password');
+  });
 });
 
 describe('GET /api/v1/users/me', () => {
