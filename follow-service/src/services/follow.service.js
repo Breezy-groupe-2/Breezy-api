@@ -2,9 +2,17 @@ const mongoose = require('mongoose');
 const Follow = require('../models/follow.model');
 const User = require('../models/user.model');
 
+const authServiceUrl = () => process.env.AUTH_SERVICE_URL || 'http://auth-service:3001';
+
 const userNotFoundError = () => {
   const err = new Error('User not found');
   err.status = 404;
+  return err;
+};
+
+const authServiceUnavailableError = () => {
+  const err = new Error('Auth service unavailable');
+  err.status = 502;
   return err;
 };
 
@@ -14,13 +22,56 @@ const assertValidUserId = (userId) => {
   }
 };
 
-const assertActiveUser = async (userId) => {
-  assertValidUserId(userId);
+const fetchAuthUser = async (userId) => {
+  let response;
+  try {
+    response = await fetch(`${authServiceUrl()}/internal/users/${userId}`);
+  } catch {
+    throw authServiceUnavailableError();
+  }
 
-  const user = await User.findById(userId);
-  if (!user) {
+  if (response.status === 404) {
     throw userNotFoundError();
   }
+  if (!response.ok) {
+    throw authServiceUnavailableError();
+  }
+
+  const user = await response.json();
+  if (!user.id || !user.username) {
+    throw authServiceUnavailableError();
+  }
+
+  return user;
+};
+
+const upsertUserSnapshot = (user) =>
+  User.findByIdAndUpdate(
+    user.id,
+    {
+      $set: {
+        username: user.username,
+        email: `${user.id}@internal.breezy.local`,
+        passwordHash: 'external-auth-user',
+        isActive: user.isActive !== false,
+      },
+    },
+    { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true }
+  );
+
+const findUserSnapshot = async (userId) => {
+  assertValidUserId(userId);
+
+  const localUser = await User.findById(userId);
+  if (localUser) {
+    return localUser;
+  }
+
+  return upsertUserSnapshot(await fetchAuthUser(userId));
+};
+
+const assertActiveUser = async (userId) => {
+  const user = await findUserSnapshot(userId);
   if (!user.isActive) {
     const err = new Error('Forbidden');
     err.status = 403;
@@ -43,10 +94,7 @@ const followUser = async ({ followerId, followingId }) => {
   }
 
   await assertActiveUser(followerId);
-  const followingUser = await User.findById(followingId);
-  if (!followingUser) {
-    throw userNotFoundError();
-  }
+  await findUserSnapshot(followingId);
 
   try {
     await Follow.create({ follower: followerId, following: followingId });

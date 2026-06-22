@@ -96,6 +96,21 @@ const getMe = async (userId) => {
   return toPublicUser(user);
 };
 
+const getInternalUserSummary = async (userId) => {
+  const user = await User.findById(userId).select('username isActive');
+  if (!user) {
+    const err = new Error('User not found');
+    err.status = 404;
+    throw err;
+  }
+
+  return {
+    id: user._id.toString(),
+    username: user.username,
+    isActive: user.isActive,
+  };
+};
+
 const updatePreferences = async (userId, preferences) => {
   const user = await User.findById(userId);
   if (!user) {
@@ -111,4 +126,4 @@ const updatePreferences = async (userId, preferences) => {
   return normalizePreferences(user.preferences);
 };
 
-module.exports = { register, login, getMe, updatePreferences };
+module.exports = { register, login, getMe, getInternalUserSummary, updatePreferences };
