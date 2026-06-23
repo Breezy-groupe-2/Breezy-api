@@ -2,10 +2,9 @@ const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
-const User = require('../../../auth-service/src/models/user.model');
-const { app, models } = require('../../../auth-service/src/tests/helpers/api-test-utils');
+const { app, models, mongoose: authMongoose } = require('../../../auth-service/src/tests/helpers/api-test-utils');
 
-const { Post } = models;
+const { Post, User } = models;
 
 let mongod;
 let token;
@@ -31,12 +30,15 @@ const mockActiveUser = () => {
 beforeAll(async () => {
   mockActiveUser();
   mongod = await MongoMemoryServer.create();
-  await mongoose.connect(mongod.getUri());
+  const uri = mongod.getUri();
+  await mongoose.connect(uri);
+  await authMongoose.connect(uri);
 });
 
 afterAll(async () => {
   global.fetch = originalFetch;
   await mongoose.disconnect();
+  await authMongoose.disconnect();
   await mongod.stop();
 });
 
@@ -144,5 +146,28 @@ describe('POST /api/v1/posts', () => {
       .send({ content: 'Hello Breezy!' });
 
     expect(res.status).toBe(502);
+  });
+
+  it('returns 201 and includes mediaUrl on valid input with image URL', async () => {
+    const res = await request(app)
+      .post('/api/v1/posts')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: 'Hello Breezy!', mediaUrl: 'http://localhost:3000/breezy-media/image.png' });
+
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({
+      content: 'Hello Breezy!',
+      mediaUrl: 'http://localhost:3000/breezy-media/image.png',
+    });
+  });
+
+  it('returns 400 when mediaUrl is not a valid URL', async () => {
+    const res = await request(app)
+      .post('/api/v1/posts')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: 'Hello Breezy!', mediaUrl: 'not-a-url' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.details[0].field).toBe('mediaUrl');
   });
 });

@@ -68,6 +68,11 @@ services:
       MONGODB_URI: ${POST_SERVICE_MONGODB_URI:?POST_SERVICE_MONGODB_URI is required}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       AUTH_SERVICE_URL: http://auth-profile-service:3001
+      S3_ENDPOINT: ${S3_ENDPOINT:?S3_ENDPOINT is required}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?S3_ACCESS_KEY_ID is required}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?S3_SECRET_ACCESS_KEY is required}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:?S3_BUCKET_NAME is required}
+      S3_PUBLIC_URL: ${S3_PUBLIC_URL:?S3_PUBLIC_URL is required}
     depends_on:
       - post-db
     networks:
@@ -155,11 +160,45 @@ services:
       - breezy-network
     restart: unless-stopped
 
+  minio:
+    image: minio/minio:latest
+    container_name: breezy-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:?S3_ACCESS_KEY_ID is required}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:?S3_SECRET_ACCESS_KEY is required}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - breezy-network
+    restart: unless-stopped
+
+  minio-bootstrap:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Waiting for MinIO to start...';
+      until /usr/bin/mc alias set local http://minio:9000 ${S3_ACCESS_KEY_ID:?S3_ACCESS_KEY_ID is required} ${S3_SECRET_ACCESS_KEY:?S3_SECRET_ACCESS_KEY is required} 2>/dev/null; do
+        sleep 1;
+      done;
+      /usr/bin/mc mb local/${S3_BUCKET_NAME:?S3_BUCKET_NAME is required} || true;
+      /usr/bin/mc anonymous set public local/${S3_BUCKET_NAME:?S3_BUCKET_NAME is required};
+      exit 0;
+      "
+    networks:
+      - breezy-network
+
 volumes:
   auth_db_data:
   post_db_data:
   comment_db_data:
   profile_db_data:
+  minio_data:
 
 networks:
   breezy-network:

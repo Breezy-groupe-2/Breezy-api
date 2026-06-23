@@ -14,18 +14,19 @@ const serializePost = async (post) => {
     id: post._id,
     content: post.content,
     author: post.author,
+    mediaUrl: post.mediaUrl || null,
     createdAt: post.createdAt,
     updatedAt: post.updatedAt,
     likeCount,
   };
 };
 
-const createPost = async ({ content, authorId }) => {
-  const post = await Post.create({ content, author: authorId });
+const createPost = async ({ content, mediaUrl, authorId }) => {
+  const post = await Post.create({ content, mediaUrl, author: authorId });
   return serializePost(post);
 };
 
-const updatePost = async ({ postId, content, authorId }) => {
+const updatePost = async ({ postId, content, mediaUrl, authorId }) => {
   if (!mongoose.Types.ObjectId.isValid(postId)) {
     throw postNotFoundError(400);
   }
@@ -41,6 +42,9 @@ const updatePost = async ({ postId, content, authorId }) => {
   }
 
   post.content = content;
+  if (mediaUrl !== undefined) {
+    post.mediaUrl = mediaUrl;
+  }
   await post.save();
   return serializePost(post);
 };
