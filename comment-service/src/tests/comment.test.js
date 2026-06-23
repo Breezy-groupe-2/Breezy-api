@@ -101,6 +101,16 @@ describe('POST /api/v1/posts/:postId/comments', () => {
     expect(res.body).toMatchObject({ error: 'Validation failed' });
     expect(res.body.details[0]).toHaveProperty('field', 'content');
   });
+
+  it('returns 400 when postId is malformed', async () => {
+    const res = await request(app)
+      .post('/api/v1/posts/not-an-id/comments')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: 'Great post!' });
+
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ error: 'Invalid id format' });
+  });
 });
 
 describe('GET /api/v1/posts/:postId/comments', () => {
@@ -156,5 +166,12 @@ describe('GET /api/v1/posts/:postId/comments', () => {
         author: { id: userId.toString() },
       }),
     ]);
+  });
+
+  it('returns 400 when postId is malformed', async () => {
+    const res = await request(app).get('/api/v1/posts/not-an-id/comments');
+
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({ error: 'Invalid id format' });
   });
 });

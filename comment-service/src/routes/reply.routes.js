@@ -32,11 +32,33 @@ const { contentSchema, validate } = require('../middlewares/validate');
  *             schema:
  *               $ref: '#/components/schemas/ReplyResponse'
  *       400:
- *         description: Validation failed
+ *         description: Validation failed (empty content, > 280 characters, or invalid id format)
  *       401:
  *         description: Unauthorized
  *       404:
  *         description: Comment not found
+ *   get:
+ *     summary: List replies of a comment
+ *     description: Retrieves replies in chronological order.
+ *     tags: [Comments]
+ *     parameters:
+ *       - name: commentId
+ *         in: path
+ *         required: true
+ *         description: Parent Comment ID
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/ReplyResponse'
+ *       400:
+ *         description: Invalid id format
  */
 
 const router = Router({ mergeParams: true });

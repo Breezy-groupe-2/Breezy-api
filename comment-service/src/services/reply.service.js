@@ -1,5 +1,12 @@
+const mongoose = require('mongoose');
 const Reply = require('../models/reply.model');
 const Comment = require('../models/comment.model');
+
+const invalidIdError = () => {
+  const err = new Error('Invalid id format');
+  err.status = 400;
+  return err;
+};
 
 const serializeAuthor = (author) => ({ id: author.toString() });
 
@@ -12,6 +19,10 @@ const serializeReply = (reply) => ({
 });
 
 const addReply = async ({ commentId, content, authorId }) => {
+  if (!mongoose.Types.ObjectId.isValid(commentId)) {
+    throw invalidIdError();
+  }
+
   const comment = await Comment.findById(commentId);
   if (!comment) {
     const err = new Error('Comment not found');
@@ -23,6 +34,10 @@ const addReply = async ({ commentId, content, authorId }) => {
 };
 
 const getReplies = async (commentId, { limit = 50 } = {}) => {
+  if (!mongoose.Types.ObjectId.isValid(commentId)) {
+    throw invalidIdError();
+  }
+
   const replies = await Reply.find({ commentId }).sort({ createdAt: 1 }).limit(limit);
   return replies.map(serializeReply);
 };
