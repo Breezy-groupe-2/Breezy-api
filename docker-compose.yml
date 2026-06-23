@@ -2,6 +2,8 @@ services:
   auth-db:
     image: mongo:latest
     container_name: breezy-auth-db
+    ports:
+      - '27017:27017'
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?MONGO_ROOT_USER is required}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
@@ -77,6 +79,8 @@ services:
   post-db:
     image: mongo:latest
     container_name: breezy-post-db
+    ports:
+      - '27018:27017'
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?MONGO_ROOT_USER is required}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
@@ -119,6 +123,8 @@ services:
   comment-db:
     image: mongo:latest
     container_name: breezy-comment-db
+    ports:
+      - '27019:27017'
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?MONGO_ROOT_USER is required}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
@@ -132,6 +138,8 @@ services:
   profile-db:
     image: mongo:latest
     container_name: breezy-profile-db
+    ports:
+      - '27020:27017'
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?MONGO_ROOT_USER is required}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
