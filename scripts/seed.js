@@ -65,7 +65,7 @@ async function getConnectionString(uri) {
   if (!match) return uri;
   
   const hostAndPort = match[1];
-  const [host, port] = hostAndPort.split(':');
+  const [host] = hostAndPort.split(':');
   
   if (isDocker()) {
     return uri; // inside docker, hostnames resolve perfectly
