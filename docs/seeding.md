@@ -15,6 +15,8 @@ All seeded accounts share the **same password**:
 | `david` | `david@breezy.local` | `user` | Active | General user (does not have any posts or comments yet). |
 | `eve` | `eve@breezy.local` | `user` | **Suspended** | User account flagged as suspended for testing moderation logic. |
 
+> **Local development only:** These accounts and credentials are for local development only. Never use them in production or any shared environment.
+
 ---
 
 ## 🚀 How to Run the Seeder
@@ -44,10 +46,10 @@ This script will:
 If you want to connect a database GUI client (like MongoDB Compass, Robo 3T, or VS Code MongoDB extension) to inspect the data on your host, use the following connection URIs:
 
 - **Auth & Follow Database (`breezy_auth`)**:
-  `mongodb://root:rootpassword@localhost:27017/breezy_auth?authSource=admin`
+  `mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@localhost:27017/breezy_auth?authSource=admin`
 - **Posts Database (`breezy_posts`)**:
-  `mongodb://root:rootpassword@localhost:27018/breezy_posts?authSource=admin`
+  `mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@localhost:27018/breezy_posts?authSource=admin`
 - **Comments Database (`breezy_comments`)**:
-  `mongodb://root:rootpassword@localhost:27019/breezy_comments?authSource=admin`
+  `mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@localhost:27019/breezy_comments?authSource=admin`
 - **Profiles Database (`breezy_profiles`)**:
-  `mongodb://root:rootpassword@localhost:27020/breezy_profiles?authSource=admin`
+  `mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@localhost:27020/breezy_profiles?authSource=admin`
