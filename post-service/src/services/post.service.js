@@ -195,6 +195,30 @@ const getPostsByUser = async (idOrUsername, viewerId) => {
   return serializePosts(posts, viewerId);
 };
 
+// Posts liked by a user (the profile "Likes" tab), most recently liked first.
+// Accepts a Mongo id or a username.
+const getLikedPosts = async (idOrUsername, viewerId, limit = 50) => {
+  let userId = idOrUsername;
+  if (!mongoose.Types.ObjectId.isValid(idOrUsername)) {
+    userId = await fetchUserIdByUsername(idOrUsername);
+    if (!userId) {
+      const err = new Error('User not found');
+      err.status = 404;
+      throw err;
+    }
+  }
+
+  const likes = await Like.find({ user: userId }).sort({ createdAt: -1 }).limit(limit).select('post');
+  const postIds = likes.map((like) => like.post);
+  if (postIds.length === 0) return [];
+
+  const posts = await Post.find({ _id: { $in: postIds } });
+  // Preserve "most recently liked first" (Mongo $in does not guarantee order).
+  const rank = new Map(postIds.map((id, index) => [id.toString(), index]));
+  posts.sort((a, b) => rank.get(a._id.toString()) - rank.get(b._id.toString()));
+  return serializePosts(posts, viewerId);
+};
+
 // Global timeline: every post, newest first (the "Général" tab). Plain reposts
 // are excluded here so the original isn't shown twice; quote reposts (which add
 // their own text) stay. The followed feed and profiles still surface reposts.
@@ -239,6 +263,7 @@ module.exports = {
   deletePost,
   getPostById,
   getPostsByUser,
+  getLikedPosts,
   getPostsByAuthors,
   getAllPosts,
   getTrends,
