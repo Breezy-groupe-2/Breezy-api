@@ -29,6 +29,7 @@ const toPublicUser = async (user) => {
     email: user.email,
     bio: user.bio || '',
     avatarUrl: user.avatarUrl || '',
+    bannerUrl: user.bannerUrl || '',
     role: user.role,
     isAdmin: ['admin', 'moderator'].includes(user.role),
     status: user.moderationStatus,
@@ -207,7 +208,7 @@ const getSuggestions = async (viewerId, limit = 5) => {
   return Promise.all(users.map((user) => toPublicUser(user)));
 };
 
-const updateOwnProfile = async (userId, { displayName, bio, avatarUrl }) => {
+const updateOwnProfile = async (userId, { displayName, bio, avatarUrl, bannerUrl }) => {
   const user = await User.findById(userId);
   if (!user) {
     const err = new Error('User not found');
@@ -217,6 +218,7 @@ const updateOwnProfile = async (userId, { displayName, bio, avatarUrl }) => {
   if (displayName !== undefined) user.displayName = displayName;
   if (bio !== undefined) user.bio = bio;
   if (avatarUrl !== undefined) user.avatarUrl = avatarUrl;
+  if (bannerUrl !== undefined) user.bannerUrl = bannerUrl;
   await user.save();
   return toPublicUser(user);
 };
