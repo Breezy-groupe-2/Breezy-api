@@ -171,3 +171,36 @@ describe('POST /api/v1/posts', () => {
     expect(res.body.details[0].field).toBe('mediaUrl');
   });
 });
+
+describe('GET /api/v1/posts/search', () => {
+  const createPost = async (content) => {
+    await request(app)
+      .post('/api/v1/posts')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content });
+  };
+
+  it('returns posts whose content matches the query (case-insensitive)', async () => {
+    await createPost('Loving #breezy today');
+    await createPost('Another #BREEZY post');
+    await createPost('Nothing related here');
+
+    const res = await request(app)
+      .get('/api/v1/posts/search?q=%23breezy')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(2);
+    expect(res.body.every((p) => /breezy/i.test(p.content))).toBe(true);
+  });
+
+  it('returns an empty array for a blank query', async () => {
+    await createPost('Some #tag post');
+    const res = await request(app)
+      .get('/api/v1/posts/search?q=')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+});

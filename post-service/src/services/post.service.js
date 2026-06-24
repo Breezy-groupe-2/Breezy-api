@@ -137,6 +137,17 @@ const getPostsByUser = async (idOrUsername, viewerId) => {
   return serializePosts(posts, viewerId);
 };
 
+// Full-text-ish search over post content (used for hashtag/keyword search from
+// the Discover page). Case-insensitive, newest first, query treated as literal.
+const searchPosts = async (rawQuery, viewerId, limit = 50) => {
+  const query = (rawQuery || '').trim();
+  if (!query) return [];
+  const safe = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(safe, 'i');
+  const posts = await Post.find({ content: regex }).sort({ createdAt: -1 }).limit(limit);
+  return serializePosts(posts, viewerId);
+};
+
 // Global timeline: every post, newest first (the "Général" tab).
 const getAllPosts = async (viewerId, limit = 50) => {
   const posts = await Post.find().sort({ createdAt: -1 }).limit(limit);
@@ -177,6 +188,7 @@ module.exports = {
   getPostsByUser,
   getPostsByAuthors,
   getAllPosts,
+  searchPosts,
   getTrends,
   postNotFoundError,
 };
