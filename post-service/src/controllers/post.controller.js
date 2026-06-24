@@ -51,6 +51,15 @@ const getPostsByUser = async (req, res, next) => {
   }
 };
 
+const searchPosts = async (req, res, next) => {
+  try {
+    const posts = await postService.searchPosts(req.query.q, req.viewerId);
+    res.status(200).json(posts);
+  } catch (err) {
+    next(err);
+  }
+};
+
 const getLikedPosts = async (req, res, next) => {
   try {
     const posts = await postService.getLikedPosts(req.params.userId, req.viewerId);
@@ -173,4 +182,5 @@ module.exports = {
   getLikedPosts,
   getOwnPosts,
   getPostsByAuthors,
+  searchPosts,
 };

@@ -12,6 +12,7 @@ const {
   getPostsByAuthors,
   getPostsByUser,
   getLikedPosts,
+  searchPosts,
   updatePost,
 } = require('../../controllers/post.controller');
 const { authenticate } = require('../../middlewares/authenticate');
@@ -238,6 +239,7 @@ const router = Router();
 router.get('/me', authenticate, getOwnPosts);
 router.get('/all', optionalAuth, getAllPosts);
 router.get('/trends', getTrends);
+router.get('/search', optionalAuth, searchPosts);
 router.get('/user/:userId', optionalAuth, getPostsByUser);
 router.get('/liked/:userId', optionalAuth, getLikedPosts);
 router.get('/', optionalAuth, getPostsByAuthors);
