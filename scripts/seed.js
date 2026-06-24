@@ -19,11 +19,21 @@ function isDocker() {
 const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
+  displayName: { type: String },
+  bio: { type: String, maxlength: 160, default: '' },
   passwordHash: { type: String, required: true },
   role: { type: String, enum: ['user', 'moderator', 'admin'], default: 'user' },
   isActive: { type: Boolean, default: true },
   moderationStatus: { type: String, enum: ['active', 'suspended', 'banned'], default: 'active' },
   following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+}, { timestamps: true });
+
+// follow-service keeps its own user snapshots + follow edges in a separate DB.
+const followUserSnapshotSchema = new mongoose.Schema({
+  username: { type: String, required: true },
+  email: { type: String },
+  passwordHash: { type: String },
+  isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 
 const profileSchema = new mongoose.Schema({
@@ -59,6 +69,29 @@ const replySchema = new mongoose.Schema({
   author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 }, { timestamps: true });
 
+const reportSchema = new mongoose.Schema({
+  kind: { type: String, enum: ['post', 'comment'], required: true },
+  reason: {
+    type: String,
+    enum: ['Spam', 'Harcèlement', 'Contenu inapproprié', 'Désinformation'],
+    required: true
+  },
+  author: {
+    username: { type: String, required: true },
+    displayName: { type: String, required: true },
+    avatarUrl: { type: String },
+    _id: false
+  },
+  onPostAuthor: {
+    username: { type: String },
+    displayName: { type: String },
+    _id: false
+  },
+  count: { type: Number, default: 1 },
+  text: { type: String, default: '' },
+  status: { type: String, enum: ['pending', 'dismissed', 'actioned'], default: 'pending' }
+}, { timestamps: true });
+
 async function getConnectionString(uri) {
   if (!uri) return null;
   const match = uri.match(/@([^/]+)\//);
@@ -88,17 +121,23 @@ async function seed() {
   const profileUri = await getConnectionString(process.env.PROFILE_SERVICE_MONGODB_URI);
   const postUri = await getConnectionString(process.env.POST_SERVICE_MONGODB_URI);
   const commentUri = await getConnectionString(process.env.COMMENT_SERVICE_MONGODB_URI);
+  const followUri = await getConnectionString(process.env.FOLLOW_SERVICE_MONGODB_URI);
 
   console.log('🔌 Connecting to databases...');
   const authConn = await mongoose.createConnection(authUri).asPromise();
   const profileConn = await mongoose.createConnection(profileUri).asPromise();
   const postConn = await mongoose.createConnection(postUri).asPromise();
   const commentConn = await mongoose.createConnection(commentUri).asPromise();
+  const followConn = await mongoose.createConnection(followUri).asPromise();
   console.log('✅ Connected to all databases successfully.');
 
   // Define models on respective connections
   const User = authConn.model('User', userSchema);
   const Follow = authConn.model('Follow', followSchema);
+  const Report = authConn.model('Report', reportSchema);
+  // follow-service reads its own DB (snapshots + edges), not the auth DB.
+  const FollowUser = followConn.model('User', followUserSnapshotSchema);
+  const FollowEdge = followConn.model('Follow', followSchema);
   const Profile = profileConn.model('Profile', profileSchema);
   const Post = postConn.model('Post', postSchema);
   const Like = postConn.model('Like', likeSchema);
@@ -109,6 +148,7 @@ async function seed() {
   console.log('🧹 Cleaning existing data...');
   await User.deleteMany({});
   await Follow.deleteMany({});
+  await Report.deleteMany({});
   await Profile.deleteMany({});
   await Post.deleteMany({});
   await Like.deleteMany({});
@@ -131,6 +171,8 @@ async function seed() {
     {
       _id: aliceId,
       username: 'alice',
+      displayName: 'Alice',
+      bio: 'Breezy platform administrator. Here to keep the vibes light and breezy! 🌬️',
       email: 'alice@breezy.local',
       passwordHash,
       role: 'admin',
@@ -140,6 +182,8 @@ async function seed() {
     {
       _id: bobId,
       username: 'bob',
+      displayName: 'Bob',
+      bio: 'Just another Breezy user exploring microservices and Docker containers! 🐳',
       email: 'bob@breezy.local',
       passwordHash,
       role: 'user',
@@ -149,6 +193,8 @@ async function seed() {
     {
       _id: charlieId,
       username: 'charlie',
+      displayName: 'Charlie',
+      bio: 'Developer, designer, and social media minimalist.',
       email: 'charlie@breezy.local',
       passwordHash,
       role: 'user',
@@ -158,6 +204,8 @@ async function seed() {
     {
       _id: davidId,
       username: 'david',
+      displayName: 'David',
+      bio: 'Hey everyone, I am David. Looking for interesting conversations!',
       email: 'david@breezy.local',
       passwordHash,
       role: 'user',
@@ -167,6 +215,8 @@ async function seed() {
     {
       _id: eveId,
       username: 'eve',
+      displayName: 'Eve',
+      bio: 'My account is currently suspended for violating guideline terms.',
       email: 'eve@breezy.local',
       passwordHash,
       role: 'user',
@@ -221,19 +271,19 @@ async function seed() {
   // 7. Seed Posts
   console.log('📮 Seeding Posts...');
   const post1 = await Post.create({
-    content: 'Welcome to Breezy, the ultimate lightweight social network! 🚀 Keep your posts short, friendly, and breezy.',
+    content: 'Welcome to Breezy, the ultimate lightweight social network! 🚀 Keep it short and #breezy.',
     author: aliceId
   });
   const post2 = await Post.create({
-    content: 'As an administrator, please be mindful of other users. Be sure to check out the API Gateway swagger docs at /api-docs!',
+    content: 'As an administrator, please be mindful of other users. Check the swagger docs at /api-docs! #breezy #webdev',
     author: aliceId
   });
   const post3 = await Post.create({
-    content: 'Loving the fast load times on Breezy! Microservices are really doing the heavy lifting here behind Nginx.',
+    content: 'Loving the fast load times on Breezy! #microservices are doing the heavy lifting behind Nginx. #webdev',
     author: bobId
   });
   const post4 = await Post.create({
-    content: 'Does anyone else love the clean dark mode aesthetic?',
+    content: 'Does anyone else love the clean #darkmode aesthetic? #design',
     author: charlieId
   });
   console.log('✅ Posts seeded.');
@@ -278,13 +328,69 @@ async function seed() {
   ]);
   console.log('✅ Replies seeded.');
 
-  // 11. Close Connections
+  // 11. Seed Moderation Reports (admin dashboard queue)
+  console.log('🚨 Seeding Moderation Reports...');
+  await Report.create([
+    {
+      kind: 'post',
+      reason: 'Spam',
+      author: { username: 'eve', displayName: 'Eve', avatarUrl: '' },
+      count: 4,
+      text: 'GAGNE 500€/JOUR depuis chez toi 💸💸 clique sur mon lien en bio, places limitées !!!'
+    },
+    {
+      kind: 'comment',
+      reason: 'Harcèlement',
+      author: { username: 'david', displayName: 'David', avatarUrl: '' },
+      onPostAuthor: { username: 'charlie', displayName: 'Charlie' },
+      count: 7,
+      text: "franchement t'es nul, arrête de poster, personne te lit de toute façon."
+    },
+    {
+      kind: 'post',
+      reason: 'Désinformation',
+      author: { username: 'bob', displayName: 'Bob', avatarUrl: '' },
+      count: 3,
+      text: "source : « mon cousin l'a dit ». donc c'est forcément vrai, arrêtez de vérifier."
+    }
+  ]);
+  console.log('✅ Moderation reports seeded.');
+
+  // 12. Seed follow-service DB (its own user snapshots + follow edges) so the
+  //     chronological feed has data without anyone clicking "follow" first.
+  console.log('🪪 Seeding follow-service snapshots & edges...');
+  await FollowUser.deleteMany({});
+  await FollowEdge.deleteMany({});
+  const snapshot = (id, username, isActive = true) => ({
+    _id: id,
+    username,
+    email: `${id}@internal.breezy.local`,
+    passwordHash: 'external-auth-user',
+    isActive
+  });
+  await FollowUser.create([
+    snapshot(aliceId, 'alice'),
+    snapshot(bobId, 'bob'),
+    snapshot(charlieId, 'charlie'),
+    snapshot(davidId, 'david'),
+    snapshot(eveId, 'eve', false)
+  ]);
+  await FollowEdge.create([
+    { follower: bobId, following: aliceId },
+    { follower: bobId, following: charlieId },
+    { follower: charlieId, following: aliceId },
+    { follower: aliceId, following: bobId }
+  ]);
+  console.log('✅ Follow-service data seeded.');
+
+  // 13. Close Connections
   console.log('🔌 Closing connections...');
   await Promise.all([
     authConn.close(),
     profileConn.close(),
     postConn.close(),
-    commentConn.close()
+    commentConn.close(),
+    followConn.close()
   ]);
 
   console.log('🎉 Database seeding complete!');
