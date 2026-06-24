@@ -15,8 +15,17 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'Comment Service is running' });
 });
 
+const { getCommentCounts } = require('./controllers/comment.controller');
+const { likeComment, unlikeComment } = require('./controllers/comment-like.controller');
+const { authenticate } = require('./middlewares/authenticate');
 const commentRoutes = require('./routes/comment.routes');
 const replyRoutes = require('./routes/reply.routes');
+
+// Internal: batched comment counts for post-service (service-to-service only).
+app.get('/internal/comment-counts', getCommentCounts);
+// Like / unlike a comment or a reply (id is the comment OR reply id).
+app.post('/api/v1/comments/:id/like', authenticate, likeComment);
+app.delete('/api/v1/comments/:id/like', authenticate, unlikeComment);
 app.use('/api/v1/posts/:postId/comments', commentRoutes);
 app.use('/api/v1/comments/:commentId/replies', replyRoutes);
 

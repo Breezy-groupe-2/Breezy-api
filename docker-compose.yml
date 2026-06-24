@@ -12,6 +12,7 @@ services:
       - auth_db_data:/data/db
     networks:
       - breezy-network
+    restart: unless-stopped
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
       interval: 10s
@@ -33,6 +34,7 @@ services:
       PROFILE_SERVICE_MONGODB_URI: ${PROFILE_SERVICE_MONGODB_URI:?PROFILE_SERVICE_MONGODB_URI is required}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_EXPIRE: ${JWT_EXPIRE:-7d}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       AUTH_SERVICE_URL: http://localhost:3001
     depends_on:
       auth-db:
@@ -75,6 +77,7 @@ services:
       S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?S3_SECRET_ACCESS_KEY is required}
       S3_BUCKET_NAME: ${S3_BUCKET_NAME:?S3_BUCKET_NAME is required}
       S3_PUBLIC_URL: ${S3_PUBLIC_URL:?S3_PUBLIC_URL is required}
+      COMMENT_SERVICE_URL: http://comment-feed-follow-service:3003
     depends_on:
       - post-db
     networks:

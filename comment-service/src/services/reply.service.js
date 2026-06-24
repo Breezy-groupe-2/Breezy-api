@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 const Reply = require('../models/reply.model');
 const Comment = require('../models/comment.model');
+const CommentLike = require('../models/comment-like.model');
+const { fetchAuthorsByIds, authorFor } = require('../utils/users');
+const { getLikeData } = require('../utils/likes');
 
 const invalidIdError = () => {
   const err = new Error('Invalid id format');
@@ -8,13 +11,18 @@ const invalidIdError = () => {
   return err;
 };
 
-const serializeAuthor = (author) => ({ id: author.toString() });
+const emptyLikes = { countById: new Map(), likedSet: new Set() };
 
-const serializeReply = (reply) => ({
-  id: reply._id,
-  commentId: reply.commentId,
+const serializeReply = (reply, authors, likes = emptyLikes) => ({
+  id: reply._id.toString(),
+  parentId: reply.commentId.toString(),
+  parentCommentId: reply.commentId.toString(),
+  commentId: reply.commentId.toString(),
   content: reply.content,
-  author: serializeAuthor(reply.author),
+  author: authorFor(authors, reply.author),
+  likeCount: likes.countById.get(reply._id.toString()) ?? 0,
+  isLiked: likes.likedSet.has(reply._id.toString()),
+  replies: [],
   createdAt: reply.createdAt,
 });
 
@@ -30,16 +38,40 @@ const addReply = async ({ commentId, content, authorId }) => {
     throw err;
   }
   const reply = await Reply.create({ commentId, content, author: authorId });
-  return serializeReply(reply);
+  const authors = await fetchAuthorsByIds([reply.author]);
+  return serializeReply(reply, authors);
 };
 
-const getReplies = async (commentId, { limit = 50 } = {}) => {
+const getReplies = async (commentId, { limit = 50, viewerId } = {}) => {
   if (!mongoose.Types.ObjectId.isValid(commentId)) {
     throw invalidIdError();
   }
 
   const replies = await Reply.find({ commentId }).sort({ createdAt: 1 }).limit(limit);
-  return replies.map(serializeReply);
+  const [authors, likes] = await Promise.all([
+    fetchAuthorsByIds(replies.map((reply) => reply.author)),
+    getLikeData(replies.map((reply) => reply._id), viewerId),
+  ]);
+  return replies.map((reply) => serializeReply(reply, authors, likes));
 };
 
-module.exports = { addReply, getReplies };
+const deleteReply = async ({ replyId, authorId }) => {
+  if (!mongoose.Types.ObjectId.isValid(replyId)) {
+    throw invalidIdError();
+  }
+  const reply = await Reply.findById(replyId);
+  if (!reply) {
+    const err = new Error('Reply not found');
+    err.status = 404;
+    throw err;
+  }
+  if (reply.author.toString() !== authorId.toString()) {
+    const err = new Error('Forbidden');
+    err.status = 403;
+    throw err;
+  }
+  await CommentLike.deleteMany({ target: reply._id });
+  await reply.deleteOne();
+};
+
+module.exports = { addReply, getReplies, deleteReply };

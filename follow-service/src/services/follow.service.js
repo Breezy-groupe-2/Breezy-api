@@ -4,6 +4,19 @@ const User = require('../models/user.model');
 
 const authServiceUrl = () => process.env.AUTH_SERVICE_URL || 'http://auth-service:3001';
 
+// Mirror the follow edge into auth-service's User.following so follower counts
+// and suggestions stay accurate there. Best-effort: a sync failure must not fail
+// the follow action itself (the Follow collection is the source of truth).
+const syncAuthFollowing = async (method, followerId, followingId) => {
+  try {
+    await fetch(`${authServiceUrl()}/internal/users/${followerId}/following/${followingId}`, {
+      method,
+    });
+  } catch {
+    /* ignore: counts will reconcile on the next successful sync */
+  }
+};
+
 const userNotFoundError = () => {
   const err = new Error('User not found');
   err.status = 404;
@@ -45,12 +58,43 @@ const fetchAuthUser = async (userId) => {
   return user;
 };
 
+// The front addresses users by username in URLs; resolve to a Mongo id.
+const resolveUserId = async (idOrUsername) => {
+  if (mongoose.Types.ObjectId.isValid(idOrUsername)) {
+    return idOrUsername;
+  }
+
+  let response;
+  try {
+    response = await fetch(
+      `${authServiceUrl()}/internal/users/by-username/${encodeURIComponent(idOrUsername)}`
+    );
+  } catch {
+    throw authServiceUnavailableError();
+  }
+
+  if (response.status === 404) {
+    throw userNotFoundError();
+  }
+  if (!response.ok) {
+    throw authServiceUnavailableError();
+  }
+
+  const user = await response.json();
+  if (!user.id) {
+    throw authServiceUnavailableError();
+  }
+  return user.id;
+};
+
 const upsertUserSnapshot = (user) =>
   User.findByIdAndUpdate(
     user.id,
     {
       $set: {
         username: user.username,
+        displayName: user.displayName || user.username,
+        avatarUrl: user.avatarUrl || '',
         email: `${user.id}@internal.breezy.local`,
         passwordHash: 'external-auth-user',
         isActive: user.isActive !== false,
@@ -83,10 +127,12 @@ const assertActiveUser = async (userId) => {
 const toPublicUser = (user) => ({
   id: user._id.toString(),
   username: user.username,
+  displayName: user.displayName || user.username,
+  avatarUrl: user.avatarUrl || '',
 });
 
-const followUser = async ({ followerId, followingId }) => {
-  assertValidUserId(followingId);
+const followUser = async ({ followerId, followingId: followingParam }) => {
+  const followingId = await resolveUserId(followingParam);
   if (followerId.toString() === followingId.toString()) {
     const err = new Error('Cannot follow yourself');
     err.status = 400;
@@ -108,32 +154,40 @@ const followUser = async ({ followerId, followingId }) => {
   }
 
   await User.findByIdAndUpdate(followerId, { $addToSet: { following: followingId } });
+  await syncAuthFollowing('PUT', followerId, followingId);
 
   return { followerId, followingId };
 };
 
-const unfollowUser = async ({ followerId, followingId }) => {
-  assertValidUserId(followingId);
+const unfollowUser = async ({ followerId, followingId: followingParam }) => {
+  const followingId = await resolveUserId(followingParam);
   await assertActiveUser(followerId);
 
   await Follow.findOneAndDelete({ follower: followerId, following: followingId });
   await User.findByIdAndUpdate(followerId, { $pull: { following: followingId } });
+  await syncAuthFollowing('DELETE', followerId, followingId);
 
   return { followerId, followingId };
 };
 
-const getFollowers = async (userId) => {
-  assertValidUserId(userId);
+const getFollowers = async (idOrUsername) => {
+  const userId = await resolveUserId(idOrUsername);
 
-  const follows = await Follow.find({ following: userId }).populate('follower', 'username');
+  const follows = await Follow.find({ following: userId }).populate(
+    'follower',
+    'username displayName avatarUrl'
+  );
 
   return follows.filter((follow) => follow.follower).map((follow) => toPublicUser(follow.follower));
 };
 
-const getFollowing = async (userId) => {
-  assertValidUserId(userId);
+const getFollowing = async (idOrUsername) => {
+  const userId = await resolveUserId(idOrUsername);
 
-  const follows = await Follow.find({ follower: userId }).populate('following', 'username isActive');
+  const follows = await Follow.find({ follower: userId }).populate(
+    'following',
+    'username displayName avatarUrl isActive'
+  );
 
   return follows
     .filter((follow) => follow.following && follow.following.isActive !== false)

@@ -1,5 +1,7 @@
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const User = require('../models/user.model');
 const { env } = require('../config/env');
 const { defaultThemePreferences } = require('../config/theme-preferences');
@@ -16,13 +18,26 @@ const normalizePreferences = (preferences) => ({
   },
 });
 
-const toPublicUser = (user) => ({
-  id: user._id,
-  username: user.username,
-  email: user.email,
-  role: user.role,
-  preferences: normalizePreferences(user.preferences),
-});
+// Canonical public user shape consumed by the front-end. followersCount is
+// derived from how many users have this id in their `following` array.
+const toPublicUser = async (user) => {
+  const followersCount = await User.countDocuments({ following: user._id });
+  return {
+    id: user._id.toString(),
+    username: user.username,
+    displayName: user.displayName || user.username,
+    email: user.email,
+    bio: user.bio || '',
+    avatarUrl: user.avatarUrl || '',
+    role: user.role,
+    isAdmin: ['admin', 'moderator'].includes(user.role),
+    status: user.moderationStatus,
+    followersCount,
+    followingCount: user.following?.length ?? 0,
+    createdAt: user.createdAt,
+    preferences: normalizePreferences(user.preferences),
+  };
+};
 
 const checkUserStatus = async (user) => {
   if (user.moderationStatus === 'suspended' && user.bannedUntil && user.bannedUntil <= new Date()) {
@@ -67,7 +82,7 @@ const register = async ({ username, email, password }) => {
 
   return {
     token: signToken(user),
-    user: { ...toPublicUser(user), createdAt: user.createdAt },
+    user: await toPublicUser(user),
   };
 };
 
@@ -83,7 +98,68 @@ const login = async ({ email, password }) => {
   await checkUserStatus(user);
 
   const token = signToken(user);
-  return { token, user: toPublicUser(user) };
+  return { token, user: await toPublicUser(user) };
+};
+
+const deriveUniqueUsername = async (rawBase) => {
+  let base = (rawBase || '').replace(/[^a-zA-Z0-9_]/g, '').slice(0, 40);
+  if (base.length < 3) {
+    base = `${base}user`;
+  }
+  let username = base;
+  let suffix = 0;
+  // Append an incrementing suffix until we find a free username.
+  while (await User.exists({ username })) {
+    suffix += 1;
+    username = `${base}${suffix}`;
+  }
+  return username;
+};
+
+const loginWithGoogle = async ({ credential }) => {
+  if (!env.googleClientId) {
+    const err = new Error('Google sign-in is not configured');
+    err.status = 503;
+    throw err;
+  }
+
+  // Lazy-load so the dependency is only required when Google is configured.
+  const { OAuth2Client } = require('google-auth-library');
+  const client = new OAuth2Client(env.googleClientId);
+
+  let payload;
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: env.googleClientId,
+    });
+    payload = ticket.getPayload();
+  } catch {
+    const err = new Error('Invalid Google credential');
+    err.status = 401;
+    throw err;
+  }
+
+  if (!payload?.email || payload.email_verified === false) {
+    const err = new Error('Google account email is not verified');
+    err.status = 401;
+    throw err;
+  }
+
+  const email = payload.email.toLowerCase();
+  let user = await User.findOne({ email });
+
+  if (!user) {
+    // Google accounts never log in with a password; store an unusable random hash.
+    const randomPassword = crypto.randomBytes(32).toString('hex');
+    const passwordHash = await bcrypt.hash(randomPassword, 12);
+    const username = await deriveUniqueUsername(payload.email.split('@')[0]);
+    user = await User.create({ username, email, passwordHash });
+  }
+
+  await checkUserStatus(user);
+
+  return { token: signToken(user), user: await toPublicUser(user) };
 };
 
 const getMe = async (userId) => {
@@ -96,19 +172,98 @@ const getMe = async (userId) => {
   return toPublicUser(user);
 };
 
-const getInternalUserSummary = async (userId) => {
-  const user = await User.findById(userId).select('username isActive');
+// Public profile lookup by Mongo id OR username (the front uses usernames in URLs).
+const getPublicUser = async (idOrUsername) => {
+  const query = mongoose.Types.ObjectId.isValid(idOrUsername)
+    ? { _id: idOrUsername }
+    : { username: idOrUsername };
+  const user = await User.findOne(query).select('-passwordHash');
   if (!user) {
     const err = new Error('User not found');
     err.status = 404;
     throw err;
   }
+  return toPublicUser(user);
+};
 
-  return {
-    id: user._id.toString(),
-    username: user.username,
-    isActive: user.isActive,
-  };
+// Follow graph is owned by follow-service; it keeps auth's User.following in
+// sync (via the internal endpoints below) so follower counts and suggestions
+// stay accurate.
+const addFollowing = (followerId, followingId) =>
+  User.findByIdAndUpdate(followerId, { $addToSet: { following: followingId } });
+
+const removeFollowing = (followerId, followingId) =>
+  User.findByIdAndUpdate(followerId, { $pull: { following: followingId } });
+
+// Active users the viewer does not already follow (and not themselves).
+const getSuggestions = async (viewerId, limit = 5) => {
+  const me = await User.findById(viewerId).select('following');
+  const exclude = [viewerId, ...(me?.following ?? [])];
+  const users = await User.find({
+    _id: { $nin: exclude },
+    moderationStatus: 'active',
+    isActive: true,
+  }).limit(limit);
+  return Promise.all(users.map((user) => toPublicUser(user)));
+};
+
+const updateOwnProfile = async (userId, { displayName, bio, avatarUrl }) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    const err = new Error('User not found');
+    err.status = 404;
+    throw err;
+  }
+  if (displayName !== undefined) user.displayName = displayName;
+  if (bio !== undefined) user.bio = bio;
+  if (avatarUrl !== undefined) user.avatarUrl = avatarUrl;
+  await user.save();
+  return toPublicUser(user);
+};
+
+// Lightweight summary used by sibling services to enrich author references.
+const internalUserShape = (user) => ({
+  id: user._id.toString(),
+  username: user.username,
+  displayName: user.displayName || user.username,
+  avatarUrl: user.avatarUrl || '',
+  isActive: user.isActive,
+});
+
+const getInternalUserSummary = async (userId) => {
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    const err = new Error('User not found');
+    err.status = 404;
+    throw err;
+  }
+  const user = await User.findById(userId).select('username displayName avatarUrl isActive');
+  if (!user) {
+    const err = new Error('User not found');
+    err.status = 404;
+    throw err;
+  }
+  return internalUserShape(user);
+};
+
+const getInternalUserByUsername = async (username) => {
+  const user = await User.findOne({ username }).select('username displayName avatarUrl isActive');
+  if (!user) {
+    const err = new Error('User not found');
+    err.status = 404;
+    throw err;
+  }
+  return internalUserShape(user);
+};
+
+// Batch resolution: a single query for many ids (avoids per-author HTTP fan-out
+// in sibling services). Unknown/invalid ids are simply omitted from the result.
+const getInternalUsersByIds = async (ids) => {
+  const valid = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
+  if (valid.length === 0) return [];
+  const users = await User.find({ _id: { $in: valid } }).select(
+    'username displayName avatarUrl isActive'
+  );
+  return users.map(internalUserShape);
 };
 
 const updatePreferences = async (userId, preferences) => {
@@ -126,4 +281,18 @@ const updatePreferences = async (userId, preferences) => {
   return normalizePreferences(user.preferences);
 };
 
-module.exports = { register, login, getMe, getInternalUserSummary, updatePreferences };
+module.exports = {
+  register,
+  login,
+  loginWithGoogle,
+  getMe,
+  getPublicUser,
+  getSuggestions,
+  addFollowing,
+  removeFollowing,
+  updateOwnProfile,
+  getInternalUserSummary,
+  getInternalUserByUsername,
+  getInternalUsersByIds,
+  updatePreferences,
+};

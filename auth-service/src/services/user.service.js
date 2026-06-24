@@ -2,13 +2,12 @@ const User = require('../models/user.model');
 const mongoose = require('mongoose');
 
 const moderateUser = async ({ userId, status, durationHours, reason, moderatorId }) => {
-  if (!mongoose.Types.ObjectId.isValid(userId)) {
-    const err = new Error('User not found');
-    err.status = 404;
-    throw err;
-  }
+  // The admin UI targets users by username; accept either a Mongo id or username.
+  const query = mongoose.Types.ObjectId.isValid(userId)
+    ? { _id: userId }
+    : { username: userId };
 
-  const user = await User.findById(userId);
+  const user = await User.findOne(query);
   if (!user) {
     const err = new Error('User not found');
     err.status = 404;

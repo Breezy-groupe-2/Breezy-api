@@ -2,12 +2,17 @@ const { Router } = require('express');
 const { likePost, unlikePost } = require('../../controllers/like.controller');
 const {
   createPost,
+  deletePost,
+  getPost,
+  getAllPosts,
+  getTrends,
   getOwnPosts,
   getPostsByAuthors,
   getPostsByUser,
   updatePost,
 } = require('../../controllers/post.controller');
 const { authenticate } = require('../../middlewares/authenticate');
+const { optionalAuth } = require('../../middlewares/optionalAuth');
 const { validate, postContentSchema } = require('../../middlewares/validate');
 
 /**
@@ -228,11 +233,15 @@ const { validate, postContentSchema } = require('../../middlewares/validate');
 const router = Router();
 
 router.get('/me', authenticate, getOwnPosts);
-router.get('/user/:userId', getPostsByUser);
-router.get('/', getPostsByAuthors);
+router.get('/all', optionalAuth, getAllPosts);
+router.get('/trends', getTrends);
+router.get('/user/:userId', optionalAuth, getPostsByUser);
+router.get('/', optionalAuth, getPostsByAuthors);
 router.post('/', authenticate, validate(postContentSchema), createPost);
 router.put('/:id', authenticate, validate(postContentSchema), updatePost);
 router.post('/:id/like', authenticate, likePost);
 router.delete('/:id/like', authenticate, unlikePost);
+router.get('/:id', optionalAuth, getPost);
+router.delete('/:id', authenticate, deletePost);
 
 module.exports = router;
