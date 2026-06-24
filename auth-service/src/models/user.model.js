@@ -33,6 +33,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    bannerUrl: {
+      type: String,
+      default: '',
+    },
     passwordHash: {
       type: String,
       required: true,

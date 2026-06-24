@@ -26,8 +26,9 @@ const updateProfileSchema = z
   .object({
     displayName: z.string().trim().min(1).max(50).optional(),
     bio: z.string().max(160).optional(),
-    // Accepted for forward-compat but ignored (avatars are derived from username).
+    // Image URLs uploaded via the media service (empty string clears them).
     avatarUrl: z.string().optional(),
+    bannerUrl: z.string().optional(),
   })
   .strip();
 
