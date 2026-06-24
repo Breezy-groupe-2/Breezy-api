@@ -10,6 +10,7 @@ const {
   syncUnfollowing,
   me,
   getSuggestions,
+  searchUsers,
   getPublicUser,
   updateMe,
   updatePreferences,
@@ -55,6 +56,8 @@ app.patch(
 );
 // Suggested users to follow (must be registered before the :id route).
 app.get('/api/v1/users/suggestions', authenticate, checkActive, getSuggestions);
+// User search by username or display name (must precede the :id route).
+app.get('/api/v1/users/search', authenticate, checkActive, searchUsers);
 // Public profile lookup by id or username (front uses usernames in URLs).
 app.get('/api/v1/users/:id', getPublicUser);
 app.use('/api/v1/users', moderationRoutes);

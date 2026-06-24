@@ -244,6 +244,70 @@ describe('PUT /api/v1/users/me', () => {
   });
 });
 
+describe('GET /api/v1/users/search', () => {
+  let token;
+
+  beforeEach(async () => {
+    await request(app).post('/api/v1/auth/register').send(validPayload);
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: validPayload.email, password: validPayload.password });
+    token = res.body.token;
+    // A few other users to search for.
+    await request(app)
+      .post('/api/v1/auth/register')
+      .send({ username: 'alice', email: 'alice@example.com', password: 'Password123' });
+    await request(app)
+      .post('/api/v1/auth/register')
+      .send({ username: 'alicia', email: 'alicia@example.com', password: 'Password123' });
+    await request(app)
+      .post('/api/v1/auth/register')
+      .send({ username: 'bob', email: 'bob@example.com', password: 'Password123' });
+  });
+
+  it('returns users whose username matches the query (case-insensitive)', async () => {
+    const res = await request(app)
+      .get('/api/v1/users/search?q=ALI')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    const usernames = res.body.map((u) => u.username).sort();
+    expect(usernames).toEqual(['alice', 'alicia']);
+  });
+
+  it('excludes the viewer from the results', async () => {
+    const res = await request(app)
+      .get(`/api/v1/users/search?q=${validPayload.username}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it('returns an empty array for a blank query', async () => {
+    const res = await request(app)
+      .get('/api/v1/users/search?q=')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it('treats regex metacharacters as plain text', async () => {
+    const res = await request(app)
+      .get('/api/v1/users/search?q=.*')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+
+  it('returns 401 when no token is provided', async () => {
+    const res = await request(app).get('/api/v1/users/search?q=ali');
+    expect(res.status).toBe(401);
+  });
+});
+
 describe('PATCH /api/v1/users/me/preferences', () => {
   let token;
 

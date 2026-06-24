@@ -103,6 +103,15 @@ const getSuggestions = async (req, res, next) => {
   }
 };
 
+const searchUsers = async (req, res, next) => {
+  try {
+    const users = await authService.searchUsers(req.query.q, req.user.sub);
+    res.status(200).json(users);
+  } catch (err) {
+    next(err);
+  }
+};
+
 const getPublicUser = async (req, res, next) => {
   try {
     const user = await authService.getPublicUser(req.params.id);
@@ -127,6 +136,7 @@ module.exports = {
   googleLogin,
   me,
   getSuggestions,
+  searchUsers,
   getPublicUser,
   updateMe,
   internalUserSummary,
