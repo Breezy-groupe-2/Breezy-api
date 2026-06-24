@@ -22,49 +22,105 @@ const toAuthor = (user) => ({
 });
 
 // Serialize a batch of posts: enrich authors, aggregate like counts, and flag
-// which ones the viewer liked — all in a fixed number of queries (no N+1).
-const serializePosts = async (posts, viewerId) => {
+// which ones the viewer liked/reposted — all in a fixed number of queries (no
+// N+1). `embedOriginals` is set to false on the recursive call so reposts never
+// nest deeper than one level.
+const serializePosts = async (posts, viewerId, { embedOriginals = true } = {}) => {
   if (posts.length === 0) return [];
 
   const postIds = posts.map((post) => post._id);
   const authorIds = posts.map((post) => post.author);
+  const originalIds = posts.map((post) => post.repostOf).filter(Boolean);
 
-  const [usersById, likeAgg, viewerLikes, commentCounts] = await Promise.all([
-    fetchUsersByIds(authorIds),
-    Like.aggregate([
-      { $match: { post: { $in: postIds } } },
-      { $group: { _id: '$post', count: { $sum: 1 } } },
-    ]),
-    viewerId
-      ? Like.find({ post: { $in: postIds }, user: viewerId }).select('post')
-      : Promise.resolve([]),
-    fetchCommentCounts(postIds),
-  ]);
+  const [usersById, likeAgg, viewerLikes, commentCounts, repostAgg, viewerReposts, originals] =
+    await Promise.all([
+      fetchUsersByIds(authorIds),
+      Like.aggregate([
+        { $match: { post: { $in: postIds } } },
+        { $group: { _id: '$post', count: { $sum: 1 } } },
+      ]),
+      viewerId
+        ? Like.find({ post: { $in: postIds }, user: viewerId }).select('post')
+        : Promise.resolve([]),
+      fetchCommentCounts(postIds),
+      Post.aggregate([
+        { $match: { repostOf: { $in: postIds } } },
+        { $group: { _id: '$repostOf', count: { $sum: 1 } } },
+      ]),
+      viewerId
+        ? Post.find({ repostOf: { $in: postIds }, author: viewerId, content: '' }).select('repostOf')
+        : Promise.resolve([]),
+      embedOriginals && originalIds.length
+        ? Post.find({ _id: { $in: originalIds } })
+        : Promise.resolve([]),
+    ]);
 
   const likeCountByPost = new Map(likeAgg.map((row) => [row._id.toString(), row.count]));
   const likedByViewer = new Set(viewerLikes.map((like) => like.post.toString()));
+  const repostCountByPost = new Map(repostAgg.map((row) => [row._id.toString(), row.count]));
+  const repostedByViewer = new Set(viewerReposts.map((r) => r.repostOf.toString()));
+
+  // Serialize embedded originals one level deep (no further nesting).
+  const originalsSerialized = originals.length
+    ? await serializePosts(originals, viewerId, { embedOriginals: false })
+    : [];
+  const originalById = new Map(originalsSerialized.map((o) => [o.id, o]));
 
   return posts.map((post) => {
     const author = usersById.get(post.author.toString()) ?? fallbackUser(post.author);
+    const id = post._id.toString();
     return {
-      id: post._id.toString(),
+      id,
       content: post.content,
       author: toAuthor(author),
       mediaUrl: post.mediaUrl || null,
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
-      likeCount: likeCountByPost.get(post._id.toString()) ?? 0,
-      isLiked: likedByViewer.has(post._id.toString()),
-      commentsCount: Number(commentCounts.get(post._id.toString()) ?? 0),
+      likeCount: likeCountByPost.get(id) ?? 0,
+      isLiked: likedByViewer.has(id),
+      commentsCount: Number(commentCounts.get(id) ?? 0),
+      repostCount: repostCountByPost.get(id) ?? 0,
+      isReposted: repostedByViewer.has(id),
+      repostOf: post.repostOf ? originalById.get(post.repostOf.toString()) ?? null : null,
     };
   });
 };
 
 const serializePost = async (post, viewerId) => (await serializePosts([post], viewerId))[0];
 
-const createPost = async ({ content, mediaUrl, authorId }) => {
-  const post = await Post.create({ content, mediaUrl, author: authorId });
+// Resolve the canonical post a repost should point at: if the target is itself a
+// repost, flatten to its root so we never build deep repost chains.
+const resolveRepostTarget = async (postId) => {
+  if (!mongoose.Types.ObjectId.isValid(postId)) {
+    throw postNotFoundError(400);
+  }
+  const target = await Post.findById(postId);
+  if (!target) {
+    throw postNotFoundError();
+  }
+  return target.repostOf || target._id;
+};
+
+const createPost = async ({ content, mediaUrl, repostOf, authorId }) => {
+  // A `repostOf` makes this a quote repost (it always carries content here, since
+  // plain reposts go through repostPost). Flatten the target to its root post.
+  const repostTarget = repostOf ? await resolveRepostTarget(repostOf) : null;
+  const post = await Post.create({ content, mediaUrl, repostOf: repostTarget, author: authorId });
   return serializePost(post, authorId);
+};
+
+// Plain repost (no quote text). Idempotent: returns the existing repost if any.
+const repostPost = async ({ postId, authorId }) => {
+  const targetId = await resolveRepostTarget(postId);
+  const existing = await Post.findOne({ repostOf: targetId, author: authorId, content: '' });
+  const repost =
+    existing || (await Post.create({ author: authorId, content: '', repostOf: targetId }));
+  return serializePost(repost, authorId);
+};
+
+const unrepostPost = async ({ postId, authorId }) => {
+  const targetId = await resolveRepostTarget(postId);
+  await Post.deleteOne({ repostOf: targetId, author: authorId, content: '' });
 };
 
 const updatePost = async ({ postId, content, mediaUrl, authorId }) => {
@@ -118,6 +174,8 @@ const deletePost = async ({ postId, authorId }) => {
   }
 
   await Like.deleteMany({ post: post._id });
+  // Remove any reposts pointing at this post so feeds don't show dangling cards.
+  await Post.deleteMany({ repostOf: post._id });
   await post.deleteOne();
 };
 
@@ -137,9 +195,13 @@ const getPostsByUser = async (idOrUsername, viewerId) => {
   return serializePosts(posts, viewerId);
 };
 
-// Global timeline: every post, newest first (the "Général" tab).
+// Global timeline: every post, newest first (the "Général" tab). Plain reposts
+// are excluded here so the original isn't shown twice; quote reposts (which add
+// their own text) stay. The followed feed and profiles still surface reposts.
 const getAllPosts = async (viewerId, limit = 50) => {
-  const posts = await Post.find().sort({ createdAt: -1 }).limit(limit);
+  const posts = await Post.find({ $or: [{ repostOf: null }, { content: { $ne: '' } }] })
+    .sort({ createdAt: -1 })
+    .limit(limit);
   return serializePosts(posts, viewerId);
 };
 
@@ -171,6 +233,8 @@ const getPostsByAuthors = async ({ authorIds, limit }, viewerId) => {
 
 module.exports = {
   createPost,
+  repostPost,
+  unrepostPost,
   updatePost,
   deletePost,
   getPostById,
