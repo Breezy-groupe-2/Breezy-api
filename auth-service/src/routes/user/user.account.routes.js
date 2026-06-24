@@ -8,6 +8,7 @@ const {
 } = require('../../middlewares/validate');
 const { authenticate } = require('../../middlewares/authenticate');
 const { checkActive } = require('../../middlewares/checkActive');
+const { requireVisitorOrAdmin } = require('../../middlewares/requireVisitorOrAdmin');
 
 /**
  * @openapi
@@ -252,7 +253,7 @@ const { checkActive } = require('../../middlewares/checkActive');
 
 const router = Router();
 
-router.post('/register', validate(registerSchema), register);
+router.post('/register', requireVisitorOrAdmin, validate(registerSchema), register);
 router.post('/login', validate(loginSchema), login);
 router.post('/google', validate(googleAuthSchema), googleLogin);
 router.get('/me', authenticate, checkActive, me);
