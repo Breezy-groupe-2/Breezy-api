@@ -20,4 +20,4 @@ USER appuser
 
 EXPOSE 3002
 
-CMD ["node", "src/server.js"]
+CMD ["node", "post-service/src/server.js"]
