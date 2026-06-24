@@ -183,6 +183,18 @@ describe.sequential('Breezy acceptance contract', () => {
         })
       );
     });
+
+    it('returns an empty array for an unknown but valid user id', async () => {
+      const account = await registerAndLogin('unknownprofileposts');
+      const unknownUserId = new models.User()._id.toString();
+
+      const res = await request(app)
+        .get(`/api/v1/posts/user/${unknownUserId}`)
+        .set(authHeader(account.token));
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual([]);
+    });
   });
 
   describe('Fx5 - chronological feed from followed users', () => {
@@ -277,6 +289,30 @@ describe.sequential('Breezy acceptance contract', () => {
 
       expect(like.status).toBe(400);
       expect(unlike.status).toBe(400);
+    });
+
+    it('tracks counts correctly when two different users like and one unlikes', async () => {
+      const author = await registerAndLogin('twolikeauthor');
+      const likerOne = await registerAndLogin('likerone');
+      const likerTwo = await registerAndLogin('likertwo');
+      const post = await createPost(author.token, 'Post with two likers');
+
+      const firstLike = await request(app)
+        .post(`/api/v1/posts/${post.body.id}/like`)
+        .set(authHeader(likerOne.token));
+      const secondLike = await request(app)
+        .post(`/api/v1/posts/${post.body.id}/like`)
+        .set(authHeader(likerTwo.token));
+      const firstUnlike = await request(app)
+        .delete(`/api/v1/posts/${post.body.id}/like`)
+        .set(authHeader(likerOne.token));
+
+      expect(firstLike.status).toBe(200);
+      expect(firstLike.body.likeCount).toBe(1);
+      expect(secondLike.status).toBe(200);
+      expect(secondLike.body.likeCount).toBe(2);
+      expect(firstUnlike.status).toBe(200);
+      expect(firstUnlike.body.likeCount).toBe(1);
     });
   });
 
@@ -416,6 +452,44 @@ describe.sequential('Breezy acceptance contract', () => {
       expect(feed.status).toBe(200);
       expect(feed.body.map((post) => post.content)).toEqual(['Visible after follow']);
     });
+
+    it('returns 404 for missing or malformed target and supports follow-unfollow-follow cycles', async () => {
+      const follower = await registerAndLogin('cyclefollower');
+      const target = await registerAndLogin('cycletarget');
+      const missingUserId = new models.User()._id;
+      const malformedId = 'not-a-valid-object-id';
+
+      const missing = await request(app)
+        .post(`/api/v1/users/${missingUserId}/follow`)
+        .set(authHeader(follower.token));
+      const malformed = await request(app)
+        .post(`/api/v1/users/${malformedId}/follow`)
+        .set(authHeader(follower.token));
+
+      expectJsonError(missing, 404);
+      expectJsonError(malformed, 404);
+
+      const follow = await request(app)
+        .post(`/api/v1/users/${target.user.id}/follow`)
+        .set(authHeader(follower.token));
+      expect(follow.status).toBe(200);
+
+      const unfollow = await request(app)
+        .delete(`/api/v1/users/${target.user.id}/follow`)
+        .set(authHeader(follower.token));
+      expect(unfollow.status).toBe(200);
+
+      const refollow = await request(app)
+        .post(`/api/v1/users/${target.user.id}/follow`)
+        .set(authHeader(follower.token));
+      expect(refollow.status).toBe(200);
+
+      const followCount = await models.Follow.countDocuments({
+        follower: follower.user.id,
+        following: target.user.id,
+      });
+      expect(followCount).toBe(1);
+    });
   });
 
   describe('Fx10 - basic user profile', () => {
@@ -462,6 +536,23 @@ describe.sequential('Breezy acceptance contract', () => {
         avatarUrl: 'https://example.com/avatar.png',
       });
       expect(invalid.status).toBe(400);
+    });
+
+    it('returns public profile without authentication and never leaks sensitive fields', async () => {
+      const account = await registerAndLogin('publicprofile');
+
+      const res = await request(app).get(`/api/v1/users/${account.user.id}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual(
+        expect.objectContaining({
+          userId: account.user.id,
+          bio: expect.any(String),
+          avatarUrl: expect.any(String),
+        })
+      );
+      expect(res.body).not.toHaveProperty('email');
+      expect(res.body).not.toHaveProperty('passwordHash');
     });
   });
 
@@ -563,6 +654,180 @@ describe.sequential('Breezy acceptance contract', () => {
       expect(followSuspendedAuthor.status).toBe(200);
       expect(feed.status).toBe(200);
       expect(feed.body.map((post) => post.content)).toEqual(['Active author post']);
+    });
+
+    it('lets moderators suspend users with a duration and returns a future bannedUntil', async () => {
+      const moderatorPayload = userPayload('suspenddurationmod');
+      const moderatorRegister = await registerUser(moderatorPayload);
+      const target = await registerAndLogin('suspenddurationtarget');
+      await models.User.findByIdAndUpdate(moderatorRegister.body.user.id, { role: 'moderator' });
+      const moderatorLogin = await loginUser({
+        email: moderatorPayload.email,
+        password: moderatorPayload.password,
+      });
+
+      const suspended = await request(app)
+        .patch(`/api/v1/users/${target.user.id}/moderation`)
+        .set(authHeader(moderatorLogin.body.token))
+        .send({ status: 'suspended', durationHours: 24, reason: 'Temporary suspension' });
+
+      expect(suspended.status).toBe(200);
+      expect(suspended.body).toMatchObject({
+        id: target.user.id,
+        moderationStatus: 'suspended',
+      });
+      expect(new Date(suspended.body.bannedUntil).getTime()).toBeGreaterThan(Date.now());
+
+      const storedTarget = await models.User.findById(target.user.id);
+      expect(storedTarget.moderationStatus).toBe('suspended');
+      expect(storedTarget.isActive).toBe(false);
+      expect(storedTarget.bannedUntil.getTime()).toBeGreaterThan(Date.now());
+    });
+
+    it('auto-reactivates an expired suspension on login and GET /api/v1/auth/me', async () => {
+      const moderatorPayload = userPayload('expiremod');
+      const moderatorRegister = await registerUser(moderatorPayload);
+      const target = await registerAndLogin('expiretarget');
+      await models.User.findByIdAndUpdate(moderatorRegister.body.user.id, { role: 'moderator' });
+      const moderatorLogin = await loginUser({
+        email: moderatorPayload.email,
+        password: moderatorPayload.password,
+      });
+
+      await request(app)
+        .patch(`/api/v1/users/${target.user.id}/moderation`)
+        .set(authHeader(moderatorLogin.body.token))
+        .send({ status: 'suspended', durationHours: 24, reason: 'Will expire' });
+
+      expect((await loginUser({ email: target.payload.email, password: target.payload.password })).status).toBe(403);
+      expect((await request(app).get('/api/v1/auth/me').set(authHeader(target.token))).status).toBe(403);
+
+      await models.User.findByIdAndUpdate(target.user.id, {
+        bannedUntil: new Date(Date.now() - 1000),
+      });
+
+      const reactivatedLogin = await loginUser({
+        email: target.payload.email,
+        password: target.payload.password,
+      });
+      const reactivatedMe = await request(app).get('/api/v1/auth/me').set(authHeader(target.token));
+
+      expect(reactivatedLogin.status).toBe(200);
+      expect(reactivatedMe.status).toBe(200);
+
+      const storedTarget = await models.User.findById(target.user.id);
+      expect(storedTarget.moderationStatus).toBe('active');
+      expect(storedTarget.isActive).toBe(true);
+      expect(storedTarget.bannedUntil).toBeNull();
+    });
+
+    it('blocks users moderated as banned from login and protected requests', async () => {
+      const moderatorPayload = userPayload('banmod');
+      const moderatorRegister = await registerUser(moderatorPayload);
+      const target = await registerAndLogin('bantarget');
+      await models.User.findByIdAndUpdate(moderatorRegister.body.user.id, { role: 'moderator' });
+      const moderatorLogin = await loginUser({
+        email: moderatorPayload.email,
+        password: moderatorPayload.password,
+      });
+
+      const banned = await request(app)
+        .patch(`/api/v1/users/${target.user.id}/moderation`)
+        .set(authHeader(moderatorLogin.body.token))
+        .send({ status: 'banned', reason: 'Permanent ban' });
+
+      expect(banned.status).toBe(200);
+      expect(banned.body).toMatchObject({
+        id: target.user.id,
+        moderationStatus: 'banned',
+        bannedUntil: null,
+      });
+
+      expect((await loginUser({ email: target.payload.email, password: target.payload.password })).status).toBe(403);
+      expect((await request(app).get('/api/v1/auth/me').set(authHeader(target.token))).status).toBe(403);
+      expect((await createPost(target.token, 'Banned post attempt')).status).toBe(403);
+
+      const storedTarget = await models.User.findById(target.user.id);
+      expect(storedTarget.moderationStatus).toBe('banned');
+      expect(storedTarget.isActive).toBe(false);
+      expect(storedTarget.bannedUntil).toBeNull();
+    });
+
+    it('lets moderators reactivate users, clearing bannedUntil', async () => {
+      const moderatorPayload = userPayload('unbanmod');
+      const moderatorRegister = await registerUser(moderatorPayload);
+      const target = await registerAndLogin('unbantarget');
+      await models.User.findByIdAndUpdate(moderatorRegister.body.user.id, { role: 'moderator' });
+      const moderatorLogin = await loginUser({
+        email: moderatorPayload.email,
+        password: moderatorPayload.password,
+      });
+
+      await request(app)
+        .patch(`/api/v1/users/${target.user.id}/moderation`)
+        .set(authHeader(moderatorLogin.body.token))
+        .send({ status: 'suspended', durationHours: 24, reason: 'Pending review' });
+
+      const unbanned = await request(app)
+        .patch(`/api/v1/users/${target.user.id}/moderation`)
+        .set(authHeader(moderatorLogin.body.token))
+        .send({ status: 'active', reason: 'Review complete' });
+
+      expect(unbanned.status).toBe(200);
+      expect(unbanned.body).toMatchObject({
+        id: target.user.id,
+        moderationStatus: 'active',
+        bannedUntil: null,
+      });
+
+      const storedTarget = await models.User.findById(target.user.id);
+      expect(storedTarget.moderationStatus).toBe('active');
+      expect(storedTarget.isActive).toBe(true);
+      expect(storedTarget.bannedUntil).toBeNull();
+      expect(storedTarget.moderationHistory.some((entry) => entry.action === 'unban')).toBe(true);
+
+      expect((await loginUser({ email: target.payload.email, password: target.payload.password })).status).toBe(200);
+    });
+
+    it('allows an expired-suspension moderator to keep moderating because checkActive reactivates before requireRole', async () => {
+      const adminPayload = userPayload('adminreact');
+      const adminRegister = await registerUser(adminPayload);
+      const moderatorPayload = userPayload('modreact');
+      const moderatorRegister = await registerUser(moderatorPayload);
+      const target = await registerAndLogin('targetreact');
+      await models.User.findByIdAndUpdate(adminRegister.body.user.id, { role: 'admin' });
+      await models.User.findByIdAndUpdate(moderatorRegister.body.user.id, { role: 'moderator' });
+
+      const adminLogin = await loginUser({ email: adminPayload.email, password: adminPayload.password });
+      const moderatorLogin = await loginUser({
+        email: moderatorPayload.email,
+        password: moderatorPayload.password,
+      });
+
+      await request(app)
+        .patch(`/api/v1/users/${moderatorRegister.body.user.id}/moderation`)
+        .set(authHeader(adminLogin.body.token))
+        .send({ status: 'suspended', durationHours: 24, reason: 'Moderator cooldown' });
+
+      await models.User.findByIdAndUpdate(moderatorRegister.body.user.id, {
+        bannedUntil: new Date(Date.now() - 1000),
+      });
+
+      const moderated = await request(app)
+        .patch(`/api/v1/users/${target.user.id}/moderation`)
+        .set(authHeader(moderatorLogin.body.token))
+        .send({ status: 'suspended', durationHours: 1, reason: 'Moderated while reactivating' });
+
+      expect(moderated.status).toBe(200);
+      expect(moderated.body).toMatchObject({
+        id: target.user.id,
+        moderationStatus: 'suspended',
+      });
+
+      const storedModerator = await models.User.findById(moderatorRegister.body.user.id);
+      expect(storedModerator.moderationStatus).toBe('active');
+      expect(storedModerator.isActive).toBe(true);
+      expect(storedModerator.bannedUntil).toBeNull();
     });
   });
 

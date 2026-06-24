@@ -29,7 +29,12 @@ const tokenFor = (user) =>
   });
 
 const mockActiveUser = () => {
-  global.fetch = async () => ({ ok: true, status: 200, json: async () => ({}) });
+  global.fetch = async (url) => {
+    if (url.endsWith('/api/v1/users/me')) {
+      return { ok: true, status: 200, json: async () => ({}) };
+    }
+    return { ok: false, status: 404, json: async () => ({ error: 'User not found' }) };
+  };
 };
 
 beforeAll(async () => {
@@ -220,5 +225,47 @@ describe('follow routes', () => {
 
     expect(res.status).toBe(403);
     expect(res.body).toHaveProperty('error');
+  });
+
+  it('returns 404 for malformed target user id', async () => {
+    const res = await request(app)
+      .post('/api/v1/users/not-a-valid-id/follow')
+      .set('Authorization', `Bearer ${tokenA}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty('error');
+  });
+
+  it('returns 404 for valid but missing target user id', async () => {
+    const missingId = new mongoose.Types.ObjectId();
+
+    const res = await request(app)
+      .post(`/api/v1/users/${missingId}/follow`)
+      .set('Authorization', `Bearer ${tokenA}`);
+
+    expect(res.status).toBe(404);
+    expect(res.body).toHaveProperty('error');
+  });
+
+  it('follow -> unfollow -> follow keeps a single stored follow', async () => {
+    await request(app)
+      .post(`/api/v1/users/${userB._id}/follow`)
+      .set('Authorization', `Bearer ${tokenA}`);
+    await request(app)
+      .delete(`/api/v1/users/${userB._id}/follow`)
+      .set('Authorization', `Bearer ${tokenA}`);
+    const refollow = await request(app)
+      .post(`/api/v1/users/${userB._id}/follow`)
+      .set('Authorization', `Bearer ${tokenA}`);
+    const followCount = await Follow.countDocuments({ follower: userA._id, following: userB._id });
+    const storedUser = await User.findById(userA._id);
+
+    expect(refollow.status).toBe(200);
+    expect(refollow.body).toMatchObject({
+      followerId: userA._id.toString(),
+      followingId: userB._id.toString(),
+    });
+    expect(followCount).toBe(1);
+    expect(storedUser.following.map((id) => id.toString())).toEqual([userB._id.toString()]);
   });
 });

@@ -89,7 +89,7 @@ const { contentSchema, validate } = require('../middlewares/validate');
  *             schema:
  *               $ref: '#/components/schemas/CommentResponse'
  *       400:
- *         description: Validation failed (empty, or > 280 characters)
+ *         description: Validation failed (empty, > 280 characters, or invalid id format)
  *       401:
  *         description: Unauthorized
  *       404:
@@ -114,8 +114,8 @@ const { contentSchema, validate } = require('../middlewares/validate');
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/CommentResponse'
- *       404:
- *         description: Post not found
+ *       400:
+ *         description: Invalid id format
  */
 
 const router = Router({ mergeParams: true });

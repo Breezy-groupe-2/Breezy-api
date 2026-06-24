@@ -41,11 +41,21 @@ const featureNames = {
   Fx9: 'Follows and followers',
   Fx10: 'Basic user profile',
   Fx11: 'Published posts list on profile',
+  Fx12: 'Tags on posts',
+  Fx13: 'Search posts via tags',
+  Fx14: 'Notifications for mentions',
+  Fx15: 'Notifications for likes',
+  Fx16: 'Notifications for new followers',
+  Fx17: 'Private messages between users',
+  Fx18: 'Images on posts',
+  Fx19: 'Videos on posts',
+  Fx20: 'Report inappropriate content',
   Fx21: 'User suspension or banning',
+  Fx22: 'Multi-language interface',
   Fx23: 'Custom theme',
 };
 
-const requiredFeatures = [
+const implementedFeatures = [
   'Fx1',
   'Fx2',
   'Fx3',
@@ -57,12 +67,22 @@ const requiredFeatures = [
   'Fx9',
   'Fx10',
   'Fx11',
+  'Fx21',
+  'Fx23',
 ];
-const optionalFeatures = ['Fx21', 'Fx23'];
-const orderedFeatures = includeOptional
-  ? [...requiredFeatures, ...optionalFeatures]
-  : requiredFeatures;
-const requiredFeaturePattern = '\\bFx(?:[1-9]|10|11)\\b';
+const notImplementedFeatures = [
+  'Fx12',
+  'Fx13',
+  'Fx14',
+  'Fx15',
+  'Fx16',
+  'Fx17',
+  'Fx18',
+  'Fx19',
+  'Fx20',
+  'Fx22',
+];
+const allFeatures = [...implementedFeatures, ...notImplementedFeatures];
 
 const vitestArgs = [
   vitestBin,
@@ -73,7 +93,6 @@ const vitestArgs = [
   '--outputFile',
   outputFile,
   '--passWithNoTests',
-  ...(includeOptional ? [] : ['--testNamePattern', requiredFeaturePattern]),
   ...passthroughArgs,
 ];
 
@@ -104,7 +123,7 @@ const formatRunnerError = (error) => {
 };
 
 const featureResults = new Map(
-  orderedFeatures.map((featureId) => [
+  allFeatures.map((featureId) => [
     featureId,
     {
       failed: [],
@@ -149,14 +168,20 @@ for (const fileResult of report.testResults ?? []) {
 const failingFeatures = [];
 
 console.log('\nBreezy acceptance feature status\n');
-if (!includeOptional) {
+if (includeOptional) {
   console.log(
-    `Optional features skipped: ${optionalFeatures.join(', ')}. Pass --include-optional or set ACCEPTANCE_INCLUDE_OPTIONAL=true to include them.\n`
+    'Note: --include-optional is accepted for compatibility. Implemented optional features (Fx21, Fx23) are already included by default.\n'
   );
 }
-for (const featureId of orderedFeatures) {
+for (const featureId of allFeatures) {
   const feature = featureResults.get(featureId);
   const name = featureNames[featureId];
+
+  if (notImplementedFeatures.includes(featureId)) {
+    console.log(`${featureId} - ${name}: not implemented (out of scope)`);
+    continue;
+  }
+
   const works = feature.total > 0 && feature.failed.length === 0 && feature.skipped === 0;
   const status = works ? 'works' : 'does not work';
   const counts = `${feature.passed}/${feature.total} passed`;
@@ -187,8 +212,11 @@ if (runnerFailed && failingFeatures.length === 0 && unhandledErrors.length === 0
   console.log(runnerOutput);
 }
 
+const implementedWorking = implementedFeatures.length - failingFeatures.length;
+const notImplementedCount = notImplementedFeatures.length;
+const totalBriefCount = allFeatures.length;
 console.log(
-  `\nSummary: ${orderedFeatures.length - failingFeatures.length}/${orderedFeatures.length} features work.`
+  `\nSummary: ${implementedWorking}/${implementedFeatures.length} implemented features work. ${notImplementedCount}/${totalBriefCount} optional features are not implemented.`
 );
 
 process.exit(failingFeatures.length === 0 && !runnerFailed && unhandledErrors.length === 0 ? 0 : 1);
