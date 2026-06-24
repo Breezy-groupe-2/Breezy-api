@@ -229,6 +229,7 @@ const internalUserShape = (user) => ({
   username: user.username,
   displayName: user.displayName || user.username,
   avatarUrl: user.avatarUrl || '',
+  bannerUrl: user.bannerUrl || '',
   isActive: user.isActive,
 });
 
@@ -238,7 +239,7 @@ const getInternalUserSummary = async (userId) => {
     err.status = 404;
     throw err;
   }
-  const user = await User.findById(userId).select('username displayName avatarUrl isActive');
+  const user = await User.findById(userId).select('username displayName avatarUrl bannerUrl isActive');
   if (!user) {
     const err = new Error('User not found');
     err.status = 404;
@@ -248,7 +249,7 @@ const getInternalUserSummary = async (userId) => {
 };
 
 const getInternalUserByUsername = async (username) => {
-  const user = await User.findOne({ username }).select('username displayName avatarUrl isActive');
+  const user = await User.findOne({ username }).select('username displayName avatarUrl bannerUrl isActive');
   if (!user) {
     const err = new Error('User not found');
     err.status = 404;
@@ -263,7 +264,7 @@ const getInternalUsersByIds = async (ids) => {
   const valid = ids.filter((id) => mongoose.Types.ObjectId.isValid(id));
   if (valid.length === 0) return [];
   const users = await User.find({ _id: { $in: valid } }).select(
-    'username displayName avatarUrl isActive'
+    'username displayName avatarUrl bannerUrl isActive'
   );
   return users.map(internalUserShape);
 };

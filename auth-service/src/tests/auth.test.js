@@ -175,6 +175,75 @@ describe('GET /api/v1/auth/me', () => {
   });
 });
 
+describe('PUT /api/v1/users/me', () => {
+  let token;
+  const bannerUrl = 'http://localhost:3010/breezy-media/banner.png';
+
+  beforeEach(async () => {
+    await request(app).post('/api/v1/auth/register').send(validPayload);
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: validPayload.email, password: validPayload.password });
+    token = res.body.token;
+  });
+
+  it('returns 200 and persists bannerUrl', async () => {
+    const res = await request(app)
+      .put('/api/v1/users/me')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ bannerUrl });
+
+    expect(res.status).toBe(200);
+    expect(res.body.bannerUrl).toBe(bannerUrl);
+  });
+
+  it('exposes bannerUrl through the public profile lookup', async () => {
+    await request(app)
+      .put('/api/v1/users/me')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ bannerUrl });
+
+    const res = await request(app).get(`/api/v1/users/${validPayload.username}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.bannerUrl).toBe(bannerUrl);
+  });
+
+  it('clears bannerUrl when sent an empty string', async () => {
+    await request(app)
+      .put('/api/v1/users/me')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ bannerUrl });
+
+    const res = await request(app)
+      .put('/api/v1/users/me')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ bannerUrl: '' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.bannerUrl).toBe('');
+  });
+
+  it('returns 401 when no token is provided', async () => {
+    const res = await request(app).put('/api/v1/users/me').send({ bannerUrl });
+
+    expect(res.status).toBe(401);
+  });
+
+  it('includes bannerUrl in the internal user summary', async () => {
+    await request(app)
+      .put('/api/v1/users/me')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ bannerUrl });
+
+    const user = await User.findOne({ email: validPayload.email });
+    const res = await request(app).get(`/internal/users/${user._id}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.bannerUrl).toBe(bannerUrl);
+  });
+});
+
 describe('PATCH /api/v1/users/me/preferences', () => {
   let token;
 
