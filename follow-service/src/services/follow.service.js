@@ -4,6 +4,15 @@ const User = require('../models/user.model');
 const { applyCursorPagination } = require('../../../shared/utils/pagination');
 
 const authServiceUrl = () => process.env.AUTH_SERVICE_URL || 'http://auth-service:3001';
+const internalApiKey = () => process.env.INTERNAL_API_KEY;
+
+const internalHeaders = () => {
+  const headers = {};
+  if (internalApiKey()) {
+    headers['x-internal-api-key'] = internalApiKey();
+  }
+  return headers;
+};
 
 // Mirror the follow edge into auth-service's User.following so follower counts
 // and suggestions stay accurate there. Best-effort: a sync failure must not fail
@@ -12,6 +21,7 @@ const syncAuthFollowing = async (method, followerId, followingId) => {
   try {
     await fetch(`${authServiceUrl()}/internal/users/${followerId}/following/${followingId}`, {
       method,
+      headers: internalHeaders(),
     });
   } catch {
     /* ignore: counts will reconcile on the next successful sync */
@@ -39,7 +49,9 @@ const assertValidUserId = (userId) => {
 const fetchAuthUser = async (userId) => {
   let response;
   try {
-    response = await fetch(`${authServiceUrl()}/internal/users/${userId}`);
+    response = await fetch(`${authServiceUrl()}/internal/users/${userId}`, {
+      headers: internalHeaders(),
+    });
   } catch {
     throw authServiceUnavailableError();
   }
@@ -68,7 +80,8 @@ const resolveUserId = async (idOrUsername) => {
   let response;
   try {
     response = await fetch(
-      `${authServiceUrl()}/internal/users/by-username/${encodeURIComponent(idOrUsername)}`
+      `${authServiceUrl()}/internal/users/by-username/${encodeURIComponent(idOrUsername)}`,
+      { headers: internalHeaders() }
     );
   } catch {
     throw authServiceUnavailableError();

@@ -12,6 +12,9 @@ COPY profile-service/package*.json ./profile-service/
 RUN cd auth-service && npm install --legacy-peer-deps --ignore-scripts && npm cache clean --force
 RUN cd profile-service && npm install --legacy-peer-deps --ignore-scripts && npm cache clean --force
 
+# Copy shared modules
+COPY shared ./shared
+
 # Copy service source code
 COPY auth-service ./auth-service
 COPY profile-service ./profile-service

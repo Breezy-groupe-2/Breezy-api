@@ -2,10 +2,21 @@
 // auth-service internal endpoints. Failures degrade gracefully to a placeholder
 // so a single unreachable lookup never breaks a whole feed render.
 const authServiceUrl = () => process.env.AUTH_SERVICE_URL || 'http://auth-service:3001';
+const commentServiceUrl = () =>
+  process.env.COMMENT_SERVICE_URL || 'http://comment-feed-follow-service:3003';
+const internalApiKey = () => process.env.INTERNAL_API_KEY;
+
+const internalHeaders = () => {
+  const headers = {};
+  if (internalApiKey()) {
+    headers['x-internal-api-key'] = internalApiKey();
+  }
+  return headers;
+};
 
 const fetchJson = async (url) => {
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { headers: internalHeaders() });
     if (!res.ok) return null;
     return await res.json();
   } catch {
@@ -39,9 +50,6 @@ const fetchUserIdByUsername = async (username) => {
   );
   return user?.id ?? null;
 };
-
-const commentServiceUrl = () =>
-  process.env.COMMENT_SERVICE_URL || 'http://comment-feed-follow-service:3003';
 
 // Batched comment counts for a set of post ids -> Map<postId, count>.
 // Degrades to an empty map (counts default to 0) if comment-service is down.

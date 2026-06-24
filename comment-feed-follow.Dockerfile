@@ -14,6 +14,9 @@ RUN cd comment-service && npm install --legacy-peer-deps --ignore-scripts && npm
 RUN cd feed-service && npm install --legacy-peer-deps --ignore-scripts && npm cache clean --force
 RUN cd follow-service && npm install --legacy-peer-deps --ignore-scripts && npm cache clean --force
 
+# Copy shared modules
+COPY shared ./shared
+
 # Copy service source code
 COPY comment-service ./comment-service
 COPY feed-service ./feed-service

@@ -25,6 +25,7 @@ const {
 } = require('./middlewares/validate');
 const { requestLogger } = require('./middlewares/requestLogger');
 const { createLogger } = require('./config/logger');
+const { requireInternalApiKey } = require('../../shared/middlewares/internalAuth');
 
 const { setupSwagger } = require('./config/swagger');
 
@@ -39,12 +40,12 @@ app.use(requestLogger(logger));
 setupSwagger(app);
 
 app.use('/api/v1/auth', userRoutes);
-app.get('/internal/users', internalUsersByIds);
-app.get('/internal/users/by-username/:username', internalUserByUsername);
-app.get('/internal/users/:id', internalUserSummary);
+app.get('/internal/users', requireInternalApiKey, internalUsersByIds);
+app.get('/internal/users/by-username/:username', requireInternalApiKey, internalUserByUsername);
+app.get('/internal/users/:id', requireInternalApiKey, internalUserSummary);
 // follow-service keeps the follow graph in sync here (service-to-service only).
-app.put('/internal/users/:followerId/following/:followingId', syncFollowing);
-app.delete('/internal/users/:followerId/following/:followingId', syncUnfollowing);
+app.put('/internal/users/:followerId/following/:followingId', requireInternalApiKey, syncFollowing);
+app.delete('/internal/users/:followerId/following/:followingId', requireInternalApiKey, syncUnfollowing);
 app.get('/api/v1/users/me', authenticate, checkActive, me);
 app.put(
   '/api/v1/users/me',

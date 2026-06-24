@@ -2,10 +2,15 @@
 // internal endpoint. Degrades gracefully to a placeholder on failure so a
 // single bad lookup never breaks a whole comment thread.
 const authServiceUrl = () => process.env.AUTH_SERVICE_URL || 'http://auth-service:3001';
+const internalApiKey = () => process.env.INTERNAL_API_KEY;
 
 const fetchJson = async (url) => {
   try {
-    const res = await fetch(url);
+    const headers = {};
+    if (internalApiKey()) {
+      headers['x-internal-api-key'] = internalApiKey();
+    }
+    const res = await fetch(url, { headers });
     if (!res.ok) return null;
     return await res.json();
   } catch {

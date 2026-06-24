@@ -5,10 +5,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3002
 
-COPY package*.json ./
+COPY shared ./shared
+COPY post-service/package*.json ./
 RUN npm install --legacy-peer-deps && npm cache clean --force
 
-COPY . .
+COPY post-service .
 
 # Create non-root user
 RUN addgroup -g 1001 -S appgroup && \

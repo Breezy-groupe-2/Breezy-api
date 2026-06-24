@@ -24,11 +24,12 @@ app.get('/health', (req, res) => {
 const { getCommentCounts } = require('./controllers/comment.controller');
 const { likeComment, unlikeComment } = require('./controllers/comment-like.controller');
 const { authenticate } = require('./middlewares/authenticate');
+const { requireInternalApiKey } = require('../../shared/middlewares/internalAuth');
 const commentRoutes = require('./routes/comment.routes');
 const replyRoutes = require('./routes/reply.routes');
 
 // Internal: batched comment counts for post-service (service-to-service only).
-app.get('/internal/comment-counts', getCommentCounts);
+app.get('/internal/comment-counts', requireInternalApiKey, getCommentCounts);
 // Like / unlike a comment or a reply (id is the comment OR reply id).
 app.post('/api/v1/comments/:id/like', authenticate, likeComment);
 app.delete('/api/v1/comments/:id/like', authenticate, unlikeComment);
