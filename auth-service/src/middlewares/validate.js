@@ -18,6 +18,19 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+const googleAuthSchema = z.object({
+  credential: z.string().min(1, 'Google credential is required'),
+});
+
+const updateProfileSchema = z
+  .object({
+    displayName: z.string().trim().min(1).max(50).optional(),
+    bio: z.string().max(160).optional(),
+    // Accepted for forward-compat but ignored (avatars are derived from username).
+    avatarUrl: z.string().optional(),
+  })
+  .strip();
+
 const createPostSchema = z.object({
   content: z
     .string()
@@ -58,6 +71,8 @@ module.exports = {
   validate,
   registerSchema,
   loginSchema,
+  googleAuthSchema,
+  updateProfileSchema,
   createPostSchema,
   moderationSchema,
   updatePreferencesSchema,

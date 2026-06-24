@@ -19,6 +19,20 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+    displayName: {
+      type: String,
+      trim: true,
+      maxlength: 50,
+    },
+    bio: {
+      type: String,
+      default: '',
+      maxlength: 160,
+    },
+    avatarUrl: {
+      type: String,
+      default: '',
+    },
     passwordHash: {
       type: String,
       required: true,
