@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Follow = require('../models/follow.model');
 const User = require('../models/user.model');
+const { applyCursorPagination } = require('../../../shared/utils/pagination');
 
 const authServiceUrl = () => process.env.AUTH_SERVICE_URL || 'http://auth-service:3001';
 
@@ -170,28 +171,28 @@ const unfollowUser = async ({ followerId, followingId: followingParam }) => {
   return { followerId, followingId };
 };
 
-const getFollowers = async (idOrUsername) => {
+const getFollowers = async (idOrUsername, { cursor, limit = 50 } = {}) => {
   const userId = await resolveUserId(idOrUsername);
 
-  const follows = await Follow.find({ following: userId }).populate(
-    'follower',
-    'username displayName avatarUrl'
-  );
+  const filter = { following: userId };
+  const { data: follows, nextCursor, hasMore } = await applyCursorPagination(Follow, { cursor, limit, filter });
 
-  return follows.filter((follow) => follow.follower).map((follow) => toPublicUser(follow.follower));
+  const populated = await Follow.populate(follows, { path: 'follower', select: 'username displayName avatarUrl' });
+  const data = populated.filter((follow) => follow.follower).map((follow) => toPublicUser(follow.follower));
+  return { data, nextCursor, hasMore };
 };
 
-const getFollowing = async (idOrUsername) => {
+const getFollowing = async (idOrUsername, { cursor, limit = 50 } = {}) => {
   const userId = await resolveUserId(idOrUsername);
 
-  const follows = await Follow.find({ follower: userId }).populate(
-    'following',
-    'username displayName avatarUrl isActive'
-  );
+  const filter = { follower: userId };
+  const { data: follows, nextCursor, hasMore } = await applyCursorPagination(Follow, { cursor, limit, filter });
 
-  return follows
+  const populated = await Follow.populate(follows, { path: 'following', select: 'username displayName avatarUrl isActive' });
+  const data = populated
     .filter((follow) => follow.following && follow.following.isActive !== false)
     .map((follow) => toPublicUser(follow.following));
+  return { data, nextCursor, hasMore };
 };
 
 module.exports = { followUser, unfollowUser, getFollowers, getFollowing };

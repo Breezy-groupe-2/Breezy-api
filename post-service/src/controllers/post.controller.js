@@ -44,8 +44,9 @@ const getPostsByAuthors = async (req, res, next) => {
 
 const getPostsByUser = async (req, res, next) => {
   try {
-    const posts = await postService.getPostsByUser(req.params.userId, req.viewerId);
-    res.status(200).json(posts);
+    const { cursor, limit } = req.query;
+    const result = await postService.getPostsByUser(req.params.userId, req.viewerId, { cursor, limit: limit ? Number(limit) : undefined });
+    res.status(200).json(result);
   } catch (err) {
     next(err);
   }
@@ -53,8 +54,9 @@ const getPostsByUser = async (req, res, next) => {
 
 const searchPosts = async (req, res, next) => {
   try {
-    const posts = await postService.searchPosts(req.query.q, req.viewerId);
-    res.status(200).json(posts);
+    const { cursor, limit } = req.query;
+    const result = await postService.searchPosts(req.query.q, req.viewerId, { cursor, limit: limit ? Number(limit) : undefined });
+    res.status(200).json(result);
   } catch (err) {
     next(err);
   }
@@ -62,8 +64,9 @@ const searchPosts = async (req, res, next) => {
 
 const getLikedPosts = async (req, res, next) => {
   try {
-    const posts = await postService.getLikedPosts(req.params.userId, req.viewerId);
-    res.status(200).json(posts);
+    const { cursor, limit } = req.query;
+    const result = await postService.getLikedPosts(req.params.userId, req.viewerId, { cursor, limit: limit ? Number(limit) : undefined });
+    res.status(200).json(result);
   } catch (err) {
     next(err);
   }
@@ -123,8 +126,9 @@ const updatePost = async (req, res, next) => {
 
 const getAllPosts = async (req, res, next) => {
   try {
-    const posts = await postService.getAllPosts(req.viewerId);
-    res.status(200).json(posts);
+    const { cursor, limit } = req.query;
+    const result = await postService.getAllPosts(req.viewerId, { cursor, limit: limit ? Number(limit) : undefined });
+    res.status(200).json(result);
   } catch (err) {
     next(err);
   }
@@ -162,8 +166,9 @@ const deletePost = async (req, res, next) => {
 
 const getOwnPosts = async (req, res, next) => {
   try {
-    const posts = await postService.getPostsByUser(req.user.sub, req.user.sub);
-    res.status(200).json(posts);
+    const { cursor, limit } = req.query;
+    const result = await postService.getPostsByUser(req.user.sub, req.user.sub, { cursor, limit: limit ? Number(limit) : undefined });
+    res.status(200).json(result);
   } catch (err) {
     next(err);
   }

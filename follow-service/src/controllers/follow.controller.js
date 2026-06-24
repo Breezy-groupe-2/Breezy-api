@@ -26,8 +26,9 @@ const unfollowUser = async (req, res, next) => {
 
 const getFollowers = async (req, res, next) => {
   try {
-    const followers = await followService.getFollowers(req.params.id);
-    res.status(200).json(followers);
+    const { cursor, limit } = req.query;
+    const result = await followService.getFollowers(req.params.id, { cursor, limit: limit ? Number(limit) : undefined });
+    res.status(200).json(result);
   } catch (err) {
     next(err);
   }
@@ -35,8 +36,9 @@ const getFollowers = async (req, res, next) => {
 
 const getFollowing = async (req, res, next) => {
   try {
-    const following = await followService.getFollowing(req.params.id);
-    res.status(200).json(following);
+    const { cursor, limit } = req.query;
+    const result = await followService.getFollowing(req.params.id, { cursor, limit: limit ? Number(limit) : undefined });
+    res.status(200).json(result);
   } catch (err) {
     next(err);
   }

@@ -23,6 +23,13 @@ COPY follow-service ./follow-service
 COPY scripts/start-comment-feed-follow.sh ./start.sh
 RUN sed -i 's/\r$//' ./start.sh && chmod +x ./start.sh
 
+# Create non-root user
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -S appuser -u 1001 -G appgroup && \
+    chown -R appuser:appgroup /app
+
+USER appuser
+
 EXPOSE 3003 3004 3006
 
 CMD ["./start.sh"]
