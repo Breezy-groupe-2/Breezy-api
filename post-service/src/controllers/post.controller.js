@@ -35,7 +35,7 @@ const parseBatchPostQuery = (query) => {
 const getPostsByAuthors = async (req, res, next) => {
   try {
     const query = parseBatchPostQuery(req.query);
-    const posts = await postService.getPostsByAuthors(query);
+    const posts = await postService.getPostsByAuthors(query, req.viewerId);
     res.status(200).json(posts);
   } catch (err) {
     next(err);
@@ -44,7 +44,7 @@ const getPostsByAuthors = async (req, res, next) => {
 
 const getPostsByUser = async (req, res, next) => {
   try {
-    const posts = await postService.getPostsByUser(req.params.userId);
+    const posts = await postService.getPostsByUser(req.params.userId, req.viewerId);
     res.status(200).json(posts);
   } catch (err) {
     next(err);
@@ -76,13 +76,62 @@ const updatePost = async (req, res, next) => {
   }
 };
 
-const getOwnPosts = async (req, res, next) => {
+const getAllPosts = async (req, res, next) => {
   try {
-    const posts = await postService.getPostsByUser(req.user.sub);
+    const posts = await postService.getAllPosts(req.viewerId);
     res.status(200).json(posts);
   } catch (err) {
     next(err);
   }
 };
 
-module.exports = { createPost, updatePost, getPostsByUser, getOwnPosts, getPostsByAuthors };
+const getTrends = async (_req, res, next) => {
+  try {
+    const trends = await postService.getTrends();
+    res.status(200).json(trends);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getPost = async (req, res, next) => {
+  try {
+    const post = await postService.getPostById(req.params.id, req.viewerId);
+    res.status(200).json(post);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const deletePost = async (req, res, next) => {
+  try {
+    await postService.deletePost({
+      postId: req.params.id,
+      authorId: req.user.sub,
+    });
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getOwnPosts = async (req, res, next) => {
+  try {
+    const posts = await postService.getPostsByUser(req.user.sub, req.user.sub);
+    res.status(200).json(posts);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  createPost,
+  updatePost,
+  deletePost,
+  getPost,
+  getAllPosts,
+  getTrends,
+  getPostsByUser,
+  getOwnPosts,
+  getPostsByAuthors,
+};

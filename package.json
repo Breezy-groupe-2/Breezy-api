@@ -17,6 +17,7 @@
     "test": "vitest run --passWithNoTests",
     "test:acceptance": "node scripts/acceptance-summary.js",
     "test:gateway-smoke": "node scripts/gateway-smoke.js",
+    "test:fx": "node scripts/fx-acceptance.js",
     "seed": "node scripts/seed.js",
     "commit": "cz",
     "prepare": "husky"

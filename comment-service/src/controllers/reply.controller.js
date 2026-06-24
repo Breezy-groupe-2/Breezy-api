@@ -15,11 +15,25 @@ const addReply = async (req, res, next) => {
 
 const getReplies = async (req, res, next) => {
   try {
-    const replies = await replyService.getReplies(req.params.commentId);
+    const replies = await replyService.getReplies(req.params.commentId, {
+      viewerId: req.viewerId,
+    });
     res.status(200).json(replies);
   } catch (err) {
     next(err);
   }
 };
 
-module.exports = { addReply, getReplies };
+const deleteReply = async (req, res, next) => {
+  try {
+    await replyService.deleteReply({
+      replyId: req.params.replyId,
+      authorId: req.user.sub,
+    });
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { addReply, getReplies, deleteReply };

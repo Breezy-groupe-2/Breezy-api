@@ -9,6 +9,7 @@ const schema = z.object({
   PORT: z.coerce.number().int().positive().max(65535).default(3001),
   JWT_SECRET: z.string().optional(),
   MONGODB_URI: z.string().optional(),
+  GOOGLE_CLIENT_ID: z.string().optional(),
 });
 
 const parseEnv = (source) => {
@@ -39,6 +40,7 @@ const parseEnv = (source) => {
     port: result.data.PORT,
     jwtSecret,
     mongodbUri,
+    googleClientId: result.data.GOOGLE_CLIENT_ID || '',
   });
 };
 
