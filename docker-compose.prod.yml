@@ -41,11 +41,11 @@ services:
     restart: unless-stopped
 
   api-gateway:
-    image: nginx:alpine
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
     ports:
       - '${API_GATEWAY_PORT:-3000}:3000'
-    volumes:
-      - ./api-gateway/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - auth-profile-service
       - post-service
