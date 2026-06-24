@@ -60,14 +60,48 @@ const searchPosts = async (req, res, next) => {
   }
 };
 
+const getLikedPosts = async (req, res, next) => {
+  try {
+    const posts = await postService.getLikedPosts(req.params.userId, req.viewerId);
+    res.status(200).json(posts);
+  } catch (err) {
+    next(err);
+  }
+};
+
 const createPost = async (req, res, next) => {
   try {
     const post = await postService.createPost({
       content: req.body.content,
       mediaUrl: req.body.mediaUrl,
+      repostOf: req.body.repostOf,
       authorId: req.user.sub,
     });
     res.status(201).json(post);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const repostPost = async (req, res, next) => {
+  try {
+    const post = await postService.repostPost({
+      postId: req.params.id,
+      authorId: req.user.sub,
+    });
+    res.status(201).json(post);
+  } catch (err) {
+    next(err);
+  }
+};
+
+const unrepostPost = async (req, res, next) => {
+  try {
+    await postService.unrepostPost({
+      postId: req.params.id,
+      authorId: req.user.sub,
+    });
+    res.status(204).send();
   } catch (err) {
     next(err);
   }
@@ -137,12 +171,15 @@ const getOwnPosts = async (req, res, next) => {
 
 module.exports = {
   createPost,
+  repostPost,
+  unrepostPost,
   updatePost,
   deletePost,
   getPost,
   getAllPosts,
   getTrends,
   getPostsByUser,
+  getLikedPosts,
   getOwnPosts,
   getPostsByAuthors,
   searchPosts,
