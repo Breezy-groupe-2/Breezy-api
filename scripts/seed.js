@@ -36,12 +36,6 @@ const followUserSnapshotSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 
-const profileSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, required: true, unique: true },
-  bio: { type: String, maxlength: 160, default: '' },
-  avatar: { type: String, default: '' }
-}, { timestamps: true });
-
 const followSchema = new mongoose.Schema({
   follower: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   following: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
@@ -107,8 +101,7 @@ async function getConnectionString(uri) {
     let localPort = '27017';
     if (host === 'post-db') localPort = '27018';
     else if (host === 'comment-db') localPort = '27019';
-    else if (host === 'profile-db') localPort = '27020';
-    
+
     return uri.replace(hostAndPort, `localhost:${localPort}`);
   }
 }
@@ -118,14 +111,12 @@ async function seed() {
 
   // 1. Resolve connection strings
   const authUri = await getConnectionString(process.env.MONGODB_URI);
-  const profileUri = await getConnectionString(process.env.PROFILE_SERVICE_MONGODB_URI);
   const postUri = await getConnectionString(process.env.POST_SERVICE_MONGODB_URI);
   const commentUri = await getConnectionString(process.env.COMMENT_SERVICE_MONGODB_URI);
   const followUri = await getConnectionString(process.env.FOLLOW_SERVICE_MONGODB_URI);
 
   console.log('🔌 Connecting to databases...');
   const authConn = await mongoose.createConnection(authUri).asPromise();
-  const profileConn = await mongoose.createConnection(profileUri).asPromise();
   const postConn = await mongoose.createConnection(postUri).asPromise();
   const commentConn = await mongoose.createConnection(commentUri).asPromise();
   const followConn = await mongoose.createConnection(followUri).asPromise();
@@ -138,7 +129,6 @@ async function seed() {
   // follow-service reads its own DB (snapshots + edges), not the auth DB.
   const FollowUser = followConn.model('User', followUserSnapshotSchema);
   const FollowEdge = followConn.model('Follow', followSchema);
-  const Profile = profileConn.model('Profile', profileSchema);
   const Post = postConn.model('Post', postSchema);
   const Like = postConn.model('Like', likeSchema);
   const Comment = commentConn.model('Comment', commentSchema);
@@ -149,7 +139,6 @@ async function seed() {
   await User.deleteMany({});
   await Follow.deleteMany({});
   await Report.deleteMany({});
-  await Profile.deleteMany({});
   await Post.deleteMany({});
   await Like.deleteMany({});
   await Comment.deleteMany({});
@@ -236,37 +225,6 @@ async function seed() {
     { follower: aliceId, following: bobId }
   ]);
   console.log('✅ Follow relationships seeded.');
-
-  // 6. Seed Profiles
-  console.log('📝 Seeding Profiles...');
-  await Profile.create([
-    {
-      userId: aliceId,
-      bio: 'Breezy platform administrator. Here to keep the vibes light and breezy! 🌬️',
-      avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=alice'
-    },
-    {
-      userId: bobId,
-      bio: 'Just another Breezy user exploring microservices and Docker containers! 🐳',
-      avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=bob'
-    },
-    {
-      userId: charlieId,
-      bio: 'Developer, designer, and social media minimalist. Loving the lightweight experience.',
-      avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=charlie'
-    },
-    {
-      userId: davidId,
-      bio: 'Hey everyone, I am David. Looking for interesting conversations!',
-      avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=david'
-    },
-    {
-      userId: eveId,
-      bio: 'My account is currently suspended for violating guideline terms.',
-      avatar: ''
-    }
-  ]);
-  console.log('✅ Profiles seeded.');
 
   // 7. Seed Posts
   console.log('📮 Seeding Posts...');
@@ -387,7 +345,6 @@ async function seed() {
   console.log('🔌 Closing connections...');
   await Promise.all([
     authConn.close(),
-    profileConn.close(),
     postConn.close(),
     commentConn.close(),
     followConn.close()
