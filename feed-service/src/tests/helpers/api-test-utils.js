@@ -38,7 +38,12 @@ const clearDatabase = async () => {
   ]);
 };
 
-const postMongoose = require('../../../../post-service/node_modules/mongoose');
+let postMongoose;
+try {
+  postMongoose = require('../../../../post-service/node_modules/mongoose');
+} catch {
+  postMongoose = require('mongoose');
+}
 
 const setupAcceptanceDb = () => {
   beforeAll(async () => {
