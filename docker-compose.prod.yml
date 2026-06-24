@@ -44,8 +44,6 @@ services:
     build:
       context: ./api-gateway
       dockerfile: Dockerfile
-    ports:
-      - '${API_GATEWAY_PORT:-3000}:3000'
     depends_on:
       - auth-profile-service
       - post-service
