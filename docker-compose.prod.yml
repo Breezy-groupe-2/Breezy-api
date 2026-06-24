@@ -1,3 +1,5 @@
+# Production Docker Compose for Coolify
+# Domain: https://api.sliiz.com
 services:
   auth-db:
     image: mongo:latest
