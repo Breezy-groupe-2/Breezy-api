@@ -18,7 +18,7 @@ COPY profile-service ./profile-service
 
 # Copy the start script
 COPY scripts/start-auth-profile.sh ./start.sh
-RUN chmod +x ./start.sh
+RUN sed -i 's/\r$//' ./start.sh && chmod +x ./start.sh
 
 EXPOSE 3001 3007
 

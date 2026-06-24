@@ -8,5 +8,9 @@ module.exports = defineConfig({
     globals: true,
     testTimeout: 30000,
     hookTimeout: 30000,
+    env: {
+      NODE_ENV: 'test',
+      JWT_SECRET: 'test_secret',
+    },
   },
 });

@@ -6,6 +6,12 @@ const postContentSchema = z.object({
     .trim()
     .min(1, 'Content is required')
     .max(280, 'Content must be at most 280 characters'),
+  mediaUrl: z
+    .string()
+    .url('Invalid media URL format')
+    .trim()
+    .optional()
+    .nullable(),
 });
 
 const validate = (schema) => (req, res, next) => {

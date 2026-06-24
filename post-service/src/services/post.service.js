@@ -50,6 +50,7 @@ const serializePosts = async (posts, viewerId) => {
       id: post._id.toString(),
       content: post.content,
       author: toAuthor(author),
+      mediaUrl: post.mediaUrl || null,
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
       likeCount: likeCountByPost.get(post._id.toString()) ?? 0,
@@ -61,12 +62,12 @@ const serializePosts = async (posts, viewerId) => {
 
 const serializePost = async (post, viewerId) => (await serializePosts([post], viewerId))[0];
 
-const createPost = async ({ content, authorId }) => {
-  const post = await Post.create({ content, author: authorId });
+const createPost = async ({ content, mediaUrl, authorId }) => {
+  const post = await Post.create({ content, mediaUrl, author: authorId });
   return serializePost(post, authorId);
 };
 
-const updatePost = async ({ postId, content, authorId }) => {
+const updatePost = async ({ postId, content, mediaUrl, authorId }) => {
   if (!mongoose.Types.ObjectId.isValid(postId)) {
     throw postNotFoundError(400);
   }
@@ -82,6 +83,9 @@ const updatePost = async ({ postId, content, authorId }) => {
   }
 
   post.content = content;
+  if (mediaUrl !== undefined) {
+    post.mediaUrl = mediaUrl;
+  }
   await post.save();
   return serializePost(post, authorId);
 };

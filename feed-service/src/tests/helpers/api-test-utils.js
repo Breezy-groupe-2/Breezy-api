@@ -38,10 +38,19 @@ const clearDatabase = async () => {
   ]);
 };
 
+let postMongoose;
+try {
+  postMongoose = require('../../../../post-service/node_modules/mongoose');
+} catch {
+  postMongoose = require('mongoose');
+}
+
 const setupAcceptanceDb = () => {
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
-    await mongoose.connect(mongod.getUri());
+    const uri = mongod.getUri();
+    await mongoose.connect(uri);
+    await postMongoose.connect(uri);
     server = app.listen(0);
     const serviceUrl = `http://127.0.0.1:${server.address().port}`;
     process.env.AUTH_SERVICE_URL = serviceUrl;
@@ -64,6 +73,7 @@ const setupAcceptanceDb = () => {
       });
     }
     await mongoose.disconnect();
+    await postMongoose.disconnect();
     if (mongod) {
       await mongod.stop();
     }

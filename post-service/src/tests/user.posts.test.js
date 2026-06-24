@@ -1,10 +1,9 @@
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
 const request = require('supertest');
-const User = require('../../../auth-service/src/models/user.model');
-const { app, models } = require('../../../auth-service/src/tests/helpers/api-test-utils');
+const { app, models, mongoose: authMongoose } = require('../../../auth-service/src/tests/helpers/api-test-utils');
 
-const { Post } = models;
+const { Post, User } = models;
 
 let mongod;
 let token;
@@ -43,12 +42,15 @@ beforeAll(async () => {
     return { ok: true, status: 200, json: async () => ({ isActive: true }) };
   };
   mongod = await MongoMemoryServer.create();
-  await mongoose.connect(mongod.getUri());
+  const uri = mongod.getUri();
+  await mongoose.connect(uri);
+  await authMongoose.connect(uri);
 });
 
 afterAll(async () => {
   global.fetch = originalFetch;
   await mongoose.disconnect();
+  await authMongoose.disconnect();
   await mongod.stop();
 });
 

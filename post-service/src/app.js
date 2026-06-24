@@ -1,5 +1,6 @@
 const express = require('express');
 const postRoutes = require('./routes/post/post.routes');
+const mediaRoutes = require('./routes/media/media.routes');
 
 const { setupSwagger } = require('./config/swagger');
 
@@ -15,6 +16,7 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/v1/posts', postRoutes);
+app.use('/api/v1/media', mediaRoutes);
 
 app.use((err, _req, res, _next) => {
   console.error(err);

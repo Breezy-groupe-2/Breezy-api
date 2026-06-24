@@ -28,6 +28,11 @@ const { validate, postContentSchema } = require('../../middlewares/validate');
  *           minLength: 1
  *           maxLength: 280
  *           example: This is a post on Breezy!
+ *         mediaUrl:
+ *           type: string
+ *           format: uri
+ *           nullable: true
+ *           example: http://localhost:3000/breezy-media/image.png
  *     PostResponse:
  *       type: object
  *       properties:
@@ -40,6 +45,11 @@ const { validate, postContentSchema } = require('../../middlewares/validate');
  *         authorId:
  *           type: string
  *           example: 651a2b3c4d5e6f7a8b9c0d1e
+ *         mediaUrl:
+ *           type: string
+ *           format: uri
+ *           nullable: true
+ *           example: http://localhost:3000/breezy-media/image.png
  *         likeCount:
  *           type: integer
  *           example: 5
