@@ -12,6 +12,8 @@ const postContentSchema = z.object({
     .trim()
     .optional()
     .nullable(),
+  // Id of the post being quoted (quote repost). Plain reposts use a dedicated route.
+  repostOf: z.string().optional().nullable(),
 });
 
 const validate = (schema) => (req, res, next) => {

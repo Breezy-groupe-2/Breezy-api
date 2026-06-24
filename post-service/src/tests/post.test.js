@@ -209,3 +209,133 @@ describe('GET /api/v1/posts/liked/:userId', () => {
     expect(res.body).toEqual([]);
   });
 });
+
+describe('reposts', () => {
+  const createPost = async (content = 'Original post') => {
+    const res = await request(app)
+      .post('/api/v1/posts')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content });
+    return res.body;
+  };
+
+  it('plain repost: returns 201, bumps repostCount and flags isReposted', async () => {
+    const original = await createPost();
+
+    const repostRes = await request(app)
+      .post(`/api/v1/posts/${original.id}/repost`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(repostRes.status).toBe(201);
+    expect(repostRes.body.repostOf).toMatchObject({ id: original.id });
+    expect(repostRes.body.content).toBe('');
+
+    const after = await request(app)
+      .get(`/api/v1/posts/${original.id}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(after.body.repostCount).toBe(1);
+    expect(after.body.isReposted).toBe(true);
+  });
+
+  it('plain repost is idempotent (no duplicate)', async () => {
+    const original = await createPost();
+    await request(app)
+      .post(`/api/v1/posts/${original.id}/repost`)
+      .set('Authorization', `Bearer ${token}`);
+    await request(app)
+      .post(`/api/v1/posts/${original.id}/repost`)
+      .set('Authorization', `Bearer ${token}`);
+
+    const after = await request(app)
+      .get(`/api/v1/posts/${original.id}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(after.body.repostCount).toBe(1);
+  });
+
+  it('un-repost: returns 204 and clears the state', async () => {
+    const original = await createPost();
+    await request(app)
+      .post(`/api/v1/posts/${original.id}/repost`)
+      .set('Authorization', `Bearer ${token}`);
+
+    const del = await request(app)
+      .delete(`/api/v1/posts/${original.id}/repost`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(del.status).toBe(204);
+
+    const after = await request(app)
+      .get(`/api/v1/posts/${original.id}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(after.body.repostCount).toBe(0);
+    expect(after.body.isReposted).toBe(false);
+  });
+
+  it('quote repost: keeps content and embeds the original', async () => {
+    const original = await createPost();
+
+    const quote = await request(app)
+      .post('/api/v1/posts')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: 'Look at this', repostOf: original.id });
+
+    expect(quote.status).toBe(201);
+    expect(quote.body.content).toBe('Look at this');
+    expect(quote.body.repostOf).toMatchObject({ id: original.id, content: 'Original post' });
+
+    const after = await request(app)
+      .get(`/api/v1/posts/${original.id}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(after.body.repostCount).toBe(1);
+    // a quote does not toggle the plain-repost flag
+    expect(after.body.isReposted).toBe(false);
+  });
+
+  it('reposting a repost flattens to the root post', async () => {
+    const original = await createPost();
+    const repost = await request(app)
+      .post(`/api/v1/posts/${original.id}/repost`)
+      .set('Authorization', `Bearer ${token}`);
+
+    const repostOfRepost = await request(app)
+      .post(`/api/v1/posts/${repost.body.id}/repost`)
+      .set('Authorization', `Bearer ${token}`);
+    // points at the original, not at the intermediate repost
+    expect(repostOfRepost.body.repostOf.id).toBe(original.id);
+  });
+
+  it('excludes plain reposts from the global feed but keeps quotes', async () => {
+    const original = await createPost('Solo original');
+    await request(app)
+      .post(`/api/v1/posts/${original.id}/repost`)
+      .set('Authorization', `Bearer ${token}`);
+    await request(app)
+      .post('/api/v1/posts')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: 'Quoting it', repostOf: original.id });
+
+    const feed = await request(app)
+      .get('/api/v1/posts/all')
+      .set('Authorization', `Bearer ${token}`);
+
+    const contents = feed.body.map((p) => p.content);
+    // the original and the quote appear; the empty plain repost does not
+    expect(contents).toContain('Solo original');
+    expect(contents).toContain('Quoting it');
+    expect(contents).not.toContain('');
+  });
+
+  it('deleting the original removes reposts pointing at it', async () => {
+    const original = await createPost();
+    const repost = await request(app)
+      .post(`/api/v1/posts/${original.id}/repost`)
+      .set('Authorization', `Bearer ${token}`);
+
+    await request(app)
+      .delete(`/api/v1/posts/${original.id}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    const gone = await request(app)
+      .get(`/api/v1/posts/${repost.body.id}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(gone.status).toBe(404);
+  });
+});
