@@ -17,11 +17,31 @@ const userPayload = { username: 'testuser', email: 'test@example.com', password:
 const originalFetch = global.fetch;
 
 beforeAll(async () => {
-  global.fetch = async () => ({
-    ok: true,
-    status: 200,
-    json: async () => ({ isActive: true }),
+  const publicUser = (id) => ({
+    id,
+    username: `user-${id.slice(-4)}`,
+    displayName: `user-${id.slice(-4)}`,
+    avatarUrl: `https://i.pravatar.cc/150?u=${id}`,
+    isActive: true,
   });
+  global.fetch = async (url = '') => {
+    const s = String(url);
+    // Unknown username resolution returns 404 (mirrors auth-service behaviour).
+    if (s.includes('/internal/users/by-username/')) {
+      return { ok: false, status: 404, json: async () => ({ error: 'User not found' }) };
+    }
+    // Batched author enrichment: echo each requested id back as a public user.
+    const batch = s.match(/\/internal\/users\?ids=([^&]+)/);
+    if (batch) {
+      const ids = decodeURIComponent(batch[1]).split(',').filter(Boolean);
+      return { ok: true, status: 200, json: async () => ids.map(publicUser) };
+    }
+    const single = s.match(/\/internal\/users\/([^/?]+)/);
+    if (single) {
+      return { ok: true, status: 200, json: async () => publicUser(single[1]) };
+    }
+    return { ok: true, status: 200, json: async () => ({ isActive: true }) };
+  };
   mongod = await MongoMemoryServer.create();
   await mongoose.connect(mongod.getUri());
 });
@@ -107,9 +127,11 @@ describe('GET /api/v1/posts?authorIds=<ids>&limit=<n>', () => {
       'middle author A',
       'old author A',
     ]);
-    expect(res.body.every((post) => [authorA.toString(), authorB.toString()].includes(post.author))).toBe(
-      true
-    );
+    expect(
+      res.body.every((post) =>
+        [authorA.toString(), authorB.toString()].includes(post.author.id)
+      )
+    ).toBe(true);
     expect(res.body[0]).toHaveProperty('likeCount', 0);
   });
 

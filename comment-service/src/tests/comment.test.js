@@ -17,11 +17,26 @@ const token = jwt.sign({ sub: userId, role: 'user' }, 'test_secret', { expiresIn
 const originalFetch = global.fetch;
 
 const mockActiveUser = () => {
-  global.fetch = async () => ({
-    ok: true,
-    status: 200,
-    json: async () => ({ isActive: true }),
+  const publicUser = (id) => ({
+    id,
+    username: 'tester',
+    displayName: 'tester',
+    avatarUrl: 'https://i.pravatar.cc/150?u=tester',
+    isActive: true,
   });
+  global.fetch = async (url = '') => {
+    const s = String(url);
+    // Batched author enrichment: return a public user per requested id.
+    const batch = s.match(/\/internal\/users\?ids=([^&]+)/);
+    if (batch) {
+      const ids = decodeURIComponent(batch[1]).split(',').filter(Boolean);
+      return { ok: true, status: 200, json: async () => ids.map(publicUser) };
+    }
+    if (s.includes('/internal/users/')) {
+      return { ok: true, status: 200, json: async () => publicUser(userId.toString()) };
+    }
+    return { ok: true, status: 200, json: async () => ({ isActive: true }) };
+  };
 };
 
 beforeAll(async () => {
@@ -163,7 +178,7 @@ describe('GET /api/v1/posts/:postId/comments', () => {
     expect(res.body[0].replies).toEqual([
       expect.objectContaining({
         content: 'Nested reply',
-        author: { id: userId.toString() },
+        author: expect.objectContaining({ id: userId.toString() }),
       }),
     ]);
   });
