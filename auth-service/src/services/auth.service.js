@@ -208,6 +208,23 @@ const getSuggestions = async (viewerId, limit = 5) => {
   return Promise.all(users.map((user) => toPublicUser(user)));
 };
 
+// Case-insensitive lookup by username or display name (active users only,
+// excluding the viewer). Used by the "Discover" search page.
+const searchUsers = async (rawQuery, viewerId, limit = 10) => {
+  const query = (rawQuery || '').trim();
+  if (!query) return [];
+  // Escape regex metacharacters so the query is treated as plain text.
+  const safe = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(safe, 'i');
+  const users = await User.find({
+    _id: { $ne: viewerId },
+    moderationStatus: 'active',
+    isActive: true,
+    $or: [{ username: regex }, { displayName: regex }],
+  }).limit(limit);
+  return Promise.all(users.map((user) => toPublicUser(user)));
+};
+
 const updateOwnProfile = async (userId, { displayName, bio, avatarUrl, bannerUrl }) => {
   const user = await User.findById(userId);
   if (!user) {
@@ -291,6 +308,7 @@ module.exports = {
   getMe,
   getPublicUser,
   getSuggestions,
+  searchUsers,
   addFollowing,
   removeFollowing,
   updateOwnProfile,
