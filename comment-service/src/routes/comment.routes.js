@@ -1,5 +1,6 @@
 const { Router } = require('express');
-const { addComment, getComments } = require('../controllers/comment.controller');
+const { addComment, getComments, deleteComment } = require('../controllers/comment.controller');
+const { optionalAuth } = require('../middlewares/optionalAuth');
 const { authenticate } = require('../middlewares/authenticate');
 const { contentSchema, validate } = require('../middlewares/validate');
 
@@ -121,6 +122,7 @@ const { contentSchema, validate } = require('../middlewares/validate');
 const router = Router({ mergeParams: true });
 
 router.post('/', authenticate, validate(contentSchema), addComment);
-router.get('/', getComments);
+router.get('/', optionalAuth, getComments);
+router.delete('/:commentId', authenticate, deleteComment);
 
 module.exports = router;
