@@ -171,3 +171,41 @@ describe('POST /api/v1/posts', () => {
     expect(res.body.details[0].field).toBe('mediaUrl');
   });
 });
+
+describe('GET /api/v1/posts/liked/:userId', () => {
+  const userId = () => jwt.decode(token).sub;
+
+  const createPost = async (content) => {
+    const res = await request(app)
+      .post('/api/v1/posts')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content });
+    return res.body;
+  };
+
+  it('returns only the posts the user has liked', async () => {
+    const liked = await createPost('Liked one');
+    await createPost('Not liked');
+    await request(app)
+      .post(`/api/v1/posts/${liked.id}/like`)
+      .set('Authorization', `Bearer ${token}`);
+
+    const res = await request(app)
+      .get(`/api/v1/posts/liked/${userId()}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0]).toMatchObject({ id: liked.id, content: 'Liked one', isLiked: true });
+  });
+
+  it('returns an empty array when the user liked nothing', async () => {
+    await createPost('Untouched');
+    const res = await request(app)
+      .get(`/api/v1/posts/liked/${userId()}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+  });
+});
