@@ -264,6 +264,27 @@ describe('reposts', () => {
     expect(repostOfRepost.body.repostOf.id).toBe(original.id);
   });
 
+  it('excludes plain reposts from the global feed but keeps quotes', async () => {
+    const original = await createPost('Solo original');
+    await request(app)
+      .post(`/api/v1/posts/${original.id}/repost`)
+      .set('Authorization', `Bearer ${token}`);
+    await request(app)
+      .post('/api/v1/posts')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ content: 'Quoting it', repostOf: original.id });
+
+    const feed = await request(app)
+      .get('/api/v1/posts/all')
+      .set('Authorization', `Bearer ${token}`);
+
+    const contents = feed.body.map((p) => p.content);
+    // the original and the quote appear; the empty plain repost does not
+    expect(contents).toContain('Solo original');
+    expect(contents).toContain('Quoting it');
+    expect(contents).not.toContain('');
+  });
+
   it('deleting the original removes reposts pointing at it', async () => {
     const original = await createPost();
     const repost = await request(app)

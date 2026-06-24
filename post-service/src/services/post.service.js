@@ -195,9 +195,13 @@ const getPostsByUser = async (idOrUsername, viewerId) => {
   return serializePosts(posts, viewerId);
 };
 
-// Global timeline: every post, newest first (the "Général" tab).
+// Global timeline: every post, newest first (the "Général" tab). Plain reposts
+// are excluded here so the original isn't shown twice; quote reposts (which add
+// their own text) stay. The followed feed and profiles still surface reposts.
 const getAllPosts = async (viewerId, limit = 50) => {
-  const posts = await Post.find().sort({ createdAt: -1 }).limit(limit);
+  const posts = await Post.find({ $or: [{ repostOf: null }, { content: { $ne: '' } }] })
+    .sort({ createdAt: -1 })
+    .limit(limit);
   return serializePosts(posts, viewerId);
 };
 
