@@ -4,25 +4,17 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy package configurations
-COPY comment-service/package*.json ./comment-service/
-COPY feed-service/package*.json ./feed-service/
-COPY follow-service/package*.json ./follow-service/
-COPY shared/package*.json ./shared/
+# Copy source code first
+COPY comment-service ./comment-service
+COPY feed-service ./feed-service
+COPY follow-service ./follow-service
+COPY shared ./shared
 
 # Install dependencies for each service
 RUN cd comment-service && npm install --legacy-peer-deps --ignore-scripts && npm cache clean --force
 RUN cd feed-service && npm install --legacy-peer-deps --ignore-scripts && npm cache clean --force
 RUN cd follow-service && npm install --legacy-peer-deps --ignore-scripts && npm cache clean --force
 RUN cd shared && npm install --legacy-peer-deps --ignore-scripts && npm cache clean --force
-
-# Copy shared modules
-COPY shared ./shared
-
-# Copy service source code
-COPY comment-service ./comment-service
-COPY feed-service ./feed-service
-COPY follow-service ./follow-service
 
 # Copy the start script
 COPY scripts/start-comment-feed-follow.sh ./start.sh

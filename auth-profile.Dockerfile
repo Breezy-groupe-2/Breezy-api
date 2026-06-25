@@ -4,22 +4,15 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy package configurations
-COPY auth-service/package*.json ./auth-service/
-COPY profile-service/package*.json ./profile-service/
-COPY shared/package*.json ./shared/
+# Copy source code first
+COPY auth-service ./auth-service
+COPY profile-service ./profile-service
+COPY shared ./shared
 
 # Install dependencies for each service
 RUN cd auth-service && npm install --legacy-peer-deps --ignore-scripts && npm cache clean --force
 RUN cd profile-service && npm install --legacy-peer-deps --ignore-scripts && npm cache clean --force
 RUN cd shared && npm install --legacy-peer-deps --ignore-scripts && npm cache clean --force
-
-# Copy shared modules
-COPY shared ./shared
-
-# Copy service source code
-COPY auth-service ./auth-service
-COPY profile-service ./profile-service
 
 # Copy the start script
 COPY scripts/start-auth-profile.sh ./start.sh
