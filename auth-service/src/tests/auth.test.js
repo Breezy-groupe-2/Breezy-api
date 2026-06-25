@@ -1,6 +1,10 @@
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
 const request = require('supertest');
+
+process.env.JWT_SECRET = 'test_secret';
+process.env.INTERNAL_API_KEY = 'test-internal-key';
+
 const app = require('../app');
 const User = require('../models/user.model');
 
@@ -19,8 +23,6 @@ afterAll(async () => {
 afterEach(async () => {
   await User.deleteMany({});
 });
-
-process.env.JWT_SECRET = 'test_secret';
 
 const validPayload = {
   username: 'testuser',
@@ -237,7 +239,9 @@ describe('PUT /api/v1/users/me', () => {
       .send({ bannerUrl });
 
     const user = await User.findOne({ email: validPayload.email });
-    const res = await request(app).get(`/internal/users/${user._id}`);
+    const res = await request(app)
+      .get(`/internal/users/${user._id}`)
+      .set('x-internal-api-key', process.env.INTERNAL_API_KEY || 'test-internal-key');
 
     expect(res.status).toBe(200);
     expect(res.body.bannerUrl).toBe(bannerUrl);

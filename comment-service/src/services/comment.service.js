@@ -4,6 +4,7 @@ const Reply = require('../models/reply.model');
 const CommentLike = require('../models/comment-like.model');
 const { fetchAuthorsByIds, authorFor } = require('../utils/users');
 const { getLikeData } = require('../utils/likes');
+const { applyCursorPagination } = require('../../../shared/utils/pagination');
 
 const invalidIdError = () => {
   const err = new Error('Invalid id format');
@@ -47,12 +48,13 @@ const addComment = async ({ postId, content, authorId }) => {
   return serializeComment(comment, authors);
 };
 
-const getComments = async (postId, { limit = 50, viewerId } = {}) => {
+const getComments = async (postId, { cursor, limit = 50, viewerId } = {}) => {
   if (!mongoose.Types.ObjectId.isValid(postId)) {
     throw invalidIdError();
   }
 
-  const comments = await Comment.find({ postId }).sort({ createdAt: 1 }).limit(limit);
+  const filter = { postId };
+  const { data: comments, nextCursor, hasMore } = await applyCursorPagination(Comment, { cursor, limit, filter, sort: { createdAt: 1 } });
   const commentIds = comments.map((comment) => comment._id);
   const replies = await Reply.find({ commentId: { $in: commentIds } }).sort({ createdAt: 1 });
 
@@ -72,9 +74,13 @@ const getComments = async (postId, { limit = 50, viewerId } = {}) => {
     repliesByCommentId.set(key, list);
   });
 
-  return comments.map((comment) =>
-    serializeComment(comment, authors, repliesByCommentId.get(comment._id.toString()) ?? [], likes)
-  );
+  return {
+    data: comments.map((comment) =>
+      serializeComment(comment, authors, repliesByCommentId.get(comment._id.toString()) ?? [], likes)
+    ),
+    nextCursor,
+    hasMore,
+  };
 };
 
 const deleteComment = async ({ commentId, authorId }) => {

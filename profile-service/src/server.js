@@ -1,19 +1,33 @@
-require('dotenv').config();
-
 const mongoose = require('mongoose');
 const app = require('./app');
+const { env } = require('./config/env');
 const { mongodbUri } = require('./config/database');
+const { createLogger } = require('./config/logger');
 
-const PORT = process.env.PORT || 3007;
+const logger = createLogger();
 
 mongoose
   .connect(mongodbUri)
   .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Profile Service running on port ${PORT}`);
+    const server = app.listen(env.port, () => {
+      logger.info({ port: env.port }, 'server started');
     });
+
+    const shutdown = (signal) => {
+      logger.info({ signal }, 'shutting down');
+      server.close(() => {
+        mongoose.connection.close(false, () => {
+          logger.info('server closed');
+          process.exit(0);
+        });
+      });
+      setTimeout(() => process.exit(1), 10000);
+    };
+
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    process.on('SIGINT', () => shutdown('SIGINT'));
   })
   .catch((err) => {
-    console.error('Profile Service failed to start', err);
+    logger.error(err, 'server failed to start');
     process.exit(1);
   });

@@ -7,6 +7,7 @@ const {
   fetchCommentCounts,
   fallbackUser,
 } = require('../utils/users');
+const { applyCursorPagination } = require('../../../shared/utils/pagination');
 
 const postNotFoundError = (status = 404) => {
   const err = new Error('Post not found');
@@ -180,7 +181,7 @@ const deletePost = async ({ postId, authorId }) => {
 };
 
 // Accepts a Mongo id (own posts) or a username (front profile URLs).
-const getPostsByUser = async (idOrUsername, viewerId) => {
+const getPostsByUser = async (idOrUsername, viewerId, { cursor, limit = 50 } = {}) => {
   let authorId = idOrUsername;
   if (!mongoose.Types.ObjectId.isValid(idOrUsername)) {
     authorId = await fetchUserIdByUsername(idOrUsername);
@@ -191,24 +192,28 @@ const getPostsByUser = async (idOrUsername, viewerId) => {
     }
   }
 
-  const posts = await Post.find({ author: authorId }).sort({ createdAt: -1 });
-  return serializePosts(posts, viewerId);
+  const filter = { author: authorId };
+  const { data: posts, nextCursor, hasMore } = await applyCursorPagination(Post, { cursor, limit, filter });
+  const serialized = await serializePosts(posts, viewerId);
+  return { data: serialized, nextCursor, hasMore };
 };
 
 // Full-text-ish search over post content (used for hashtag/keyword search from
 // the Discover page). Case-insensitive, newest first, query treated as literal.
-const searchPosts = async (rawQuery, viewerId, limit = 50) => {
+const searchPosts = async (rawQuery, viewerId, { cursor, limit = 50 } = {}) => {
   const query = (rawQuery || '').trim();
-  if (!query) return [];
+  if (!query) return { data: [], nextCursor: null, hasMore: false };
   const safe = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const regex = new RegExp(safe, 'i');
-  const posts = await Post.find({ content: regex }).sort({ createdAt: -1 }).limit(limit);
-  return serializePosts(posts, viewerId);
+  const filter = { content: regex };
+  const { data: posts, nextCursor, hasMore } = await applyCursorPagination(Post, { cursor, limit, filter });
+  const serialized = await serializePosts(posts, viewerId);
+  return { data: serialized, nextCursor, hasMore };
 };
 
 // Posts liked by a user (the profile "Likes" tab), most recently liked first.
 // Accepts a Mongo id or a username.
-const getLikedPosts = async (idOrUsername, viewerId, limit = 50) => {
+const getLikedPosts = async (idOrUsername, viewerId, { cursor, limit = 50 } = {}) => {
   let userId = idOrUsername;
   if (!mongoose.Types.ObjectId.isValid(idOrUsername)) {
     userId = await fetchUserIdByUsername(idOrUsername);
@@ -219,25 +224,27 @@ const getLikedPosts = async (idOrUsername, viewerId, limit = 50) => {
     }
   }
 
-  const likes = await Like.find({ user: userId }).sort({ createdAt: -1 }).limit(limit).select('post');
+  const filter = { user: userId };
+  const { data: likes, nextCursor, hasMore } = await applyCursorPagination(Like, { cursor, limit, filter });
   const postIds = likes.map((like) => like.post);
-  if (postIds.length === 0) return [];
+  if (postIds.length === 0) return { data: [], nextCursor: null, hasMore: false };
 
   const posts = await Post.find({ _id: { $in: postIds } });
   // Preserve "most recently liked first" (Mongo $in does not guarantee order).
   const rank = new Map(postIds.map((id, index) => [id.toString(), index]));
   posts.sort((a, b) => rank.get(a._id.toString()) - rank.get(b._id.toString()));
-  return serializePosts(posts, viewerId);
+  const serialized = await serializePosts(posts, viewerId);
+  return { data: serialized, nextCursor, hasMore };
 };
 
 // Global timeline: every post, newest first (the "Général" tab). Plain reposts
 // are excluded here so the original isn't shown twice; quote reposts (which add
 // their own text) stay. The followed feed and profiles still surface reposts.
-const getAllPosts = async (viewerId, limit = 50) => {
-  const posts = await Post.find({ $or: [{ repostOf: null }, { content: { $ne: '' } }] })
-    .sort({ createdAt: -1 })
-    .limit(limit);
-  return serializePosts(posts, viewerId);
+const getAllPosts = async (viewerId, { cursor, limit = 50 } = {}) => {
+  const filter = { $or: [{ repostOf: null }, { content: { $ne: '' } }] };
+  const { data: posts, nextCursor, hasMore } = await applyCursorPagination(Post, { cursor, limit, filter });
+  const serialized = await serializePosts(posts, viewerId);
+  return { data: serialized, nextCursor, hasMore };
 };
 
 // Trending hashtags aggregated from post contents (case-insensitive).

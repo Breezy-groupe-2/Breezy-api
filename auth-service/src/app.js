@@ -1,4 +1,5 @@
 const express = require('express');
+const helmet = require('helmet');
 const userRoutes = require('./routes/user/user.routes');
 const moderationRoutes = require('./routes/user/user.moderation.routes');
 const adminModerationRoutes = require('./routes/moderation.routes');
@@ -22,23 +23,29 @@ const {
   updatePreferencesSchema,
   updateProfileSchema,
 } = require('./middlewares/validate');
+const { requestLogger } = require('./middlewares/requestLogger');
+const { createLogger } = require('./config/logger');
+const { requireInternalApiKey } = require('../../shared/middlewares/internalAuth');
 
 const { setupSwagger } = require('./config/swagger');
 
+const logger = createLogger();
 const app = express();
 
+app.use(helmet());
 app.use(express.json());
+app.use(requestLogger(logger));
 
 // Initialize Swagger documentation before API routes
 setupSwagger(app);
 
 app.use('/api/v1/auth', userRoutes);
-app.get('/internal/users', internalUsersByIds);
-app.get('/internal/users/by-username/:username', internalUserByUsername);
-app.get('/internal/users/:id', internalUserSummary);
+app.get('/internal/users', requireInternalApiKey, internalUsersByIds);
+app.get('/internal/users/by-username/:username', requireInternalApiKey, internalUserByUsername);
+app.get('/internal/users/:id', requireInternalApiKey, internalUserSummary);
 // follow-service keeps the follow graph in sync here (service-to-service only).
-app.put('/internal/users/:followerId/following/:followingId', syncFollowing);
-app.delete('/internal/users/:followerId/following/:followingId', syncUnfollowing);
+app.put('/internal/users/:followerId/following/:followingId', requireInternalApiKey, syncFollowing);
+app.delete('/internal/users/:followerId/following/:followingId', requireInternalApiKey, syncUnfollowing);
 app.get('/api/v1/users/me', authenticate, checkActive, me);
 app.put(
   '/api/v1/users/me',
@@ -64,8 +71,11 @@ app.use('/api/v1/users', moderationRoutes);
 app.use('/api/v1/moderation', adminModerationRoutes);
 
 app.use((err, _req, res, _next) => {
-  console.error(err);
-  res.status(err.status ?? 500).json({ error: err.message ?? 'Internal server error' });
+  logger.error(err, 'unhandled error');
+  const isProduction = process.env.NODE_ENV === 'production';
+  const statusCode = err.status ?? 500;
+  const message = isProduction && statusCode === 500 ? 'Internal server error' : (err.message ?? 'Internal server error');
+  res.status(statusCode).json({ error: message });
 });
 
 module.exports = app;

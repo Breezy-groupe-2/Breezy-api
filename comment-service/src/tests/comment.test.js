@@ -133,7 +133,7 @@ describe('GET /api/v1/posts/:postId/comments', () => {
     const res = await request(app).get(`/api/v1/posts/${postId}/comments`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([]);
+    expect(res.body.data).toEqual([]);
   });
 
   it('returns comments sorted oldest first', async () => {
@@ -149,10 +149,10 @@ describe('GET /api/v1/posts/:postId/comments', () => {
     const res = await request(app).get(`/api/v1/posts/${postId}/comments`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(2);
-    expect(res.body[0].content).toBe('First comment');
-    expect(res.body[1].content).toBe('Second comment');
-    expect(res.body[0].replies).toEqual([]);
+    expect(res.body.data).toHaveLength(2);
+    expect(res.body.data[0].content).toBe('First comment');
+    expect(res.body.data[1].content).toBe('Second comment');
+    expect(res.body.data[0].replies).toEqual([]);
   });
 
   it('does not return comments for other posts', async () => {
@@ -165,7 +165,7 @@ describe('GET /api/v1/posts/:postId/comments', () => {
     const res = await request(app).get(`/api/v1/posts/${postId}/comments`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([]);
+    expect(res.body.data).toEqual([]);
   });
 
   it('includes replies for each comment', async () => {
@@ -175,7 +175,7 @@ describe('GET /api/v1/posts/:postId/comments', () => {
     const res = await request(app).get(`/api/v1/posts/${postId}/comments`);
 
     expect(res.status).toBe(200);
-    expect(res.body[0].replies).toEqual([
+    expect(res.body.data[0].replies).toEqual([
       expect.objectContaining({
         content: 'Nested reply',
         author: expect.objectContaining({ id: userId.toString() }),

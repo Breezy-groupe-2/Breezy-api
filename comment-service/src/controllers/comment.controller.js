@@ -15,10 +15,13 @@ const addComment = async (req, res, next) => {
 
 const getComments = async (req, res, next) => {
   try {
-    const comments = await commentService.getComments(req.params.postId, {
+    const { cursor, limit } = req.query;
+    const result = await commentService.getComments(req.params.postId, {
+      cursor,
+      limit: limit ? Number(limit) : undefined,
       viewerId: req.viewerId,
     });
-    res.status(200).json(comments);
+    res.status(200).json(result);
   } catch (err) {
     next(err);
   }

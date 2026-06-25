@@ -1,9 +1,13 @@
 const express = require('express');
 const swaggerUi = require('swagger-ui-express');
+const { requestLogger } = require('./middlewares/requestLogger');
+const { createLogger } = require('./config/logger');
 
+const logger = createLogger();
 const app = express();
 
 app.use(express.json());
+app.use(requestLogger(logger));
 
 const services = [
   { path: '/api/v1/auth/swagger.json', target: 'http://auth-profile-service:3001/api/v1/auth/swagger.json', name: 'Authentication & Moderation' },
