@@ -55,7 +55,7 @@ describe('media routes', () => {
     expect(res.body.url).toContain('/breezy-media/');
     expect(res.body.url).toContain('.png');
 
-    // Vérifie que la commande d'upload S3 a été appelée
+    // Verify S3 upload command was called
     expect(s3Client.send).toHaveBeenCalled();
     const sentCommand = vi.mocked(s3Client.send).mock.calls[0][0];
     expect(sentCommand.input.Bucket).toBe('breezy-media');

@@ -22,7 +22,7 @@ const toAuthor = (user) => ({
 });
 
 // Serialize a batch of posts: enrich authors, aggregate like counts, and flag
-// which ones the viewer liked/reposted — all in a fixed number of queries (no
+// which ones the viewer liked/reposted - all in a fixed number of queries (no
 // N+1). `embedOriginals` is set to false on the recursive call so reposts never
 // nest deeper than one level.
 const serializePosts = async (posts, viewerId, { embedOriginals = true } = {}) => {
@@ -230,7 +230,7 @@ const getLikedPosts = async (idOrUsername, viewerId, limit = 50) => {
   return serializePosts(posts, viewerId);
 };
 
-// Global timeline: every post, newest first (the "Général" tab). Plain reposts
+// Global timeline: every post, newest first (the "General" tab). Plain reposts
 // are excluded here so the original isn't shown twice; quote reposts (which add
 // their own text) stay. The followed feed and profiles still surface reposts.
 const getAllPosts = async (viewerId, limit = 50) => {
