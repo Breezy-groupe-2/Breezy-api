@@ -5,9 +5,12 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3002
 
-COPY shared ./shared
+COPY shared/package*.json ./shared/
 COPY post-service/package*.json ./
 RUN npm install --legacy-peer-deps && npm cache clean --force
+RUN cd shared && npm install --legacy-peer-deps --ignore-scripts && npm cache clean --force
+
+COPY shared ./shared
 
 COPY post-service ./post-service
 
