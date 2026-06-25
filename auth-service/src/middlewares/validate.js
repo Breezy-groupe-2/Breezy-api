@@ -56,6 +56,13 @@ const updatePreferencesSchema = z
   })
   .strict();
 
+const reportSchema = z
+  .object({
+    postId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Post id must be a valid Mongo id'),
+    reason: z.enum(['Spam', 'Harcèlement', 'Contenu inapproprié', 'Désinformation']),
+  })
+  .strict();
+
 const validate = (schema) => (req, res, next) => {
   const result = schema.safeParse(req.body);
   if (!result.success) {
@@ -76,5 +83,6 @@ module.exports = {
   updateProfileSchema,
   createPostSchema,
   moderationSchema,
+  reportSchema,
   updatePreferencesSchema,
 };

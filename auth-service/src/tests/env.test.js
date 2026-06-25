@@ -5,6 +5,7 @@ const productionConfig = {
   PORT: '4100',
   JWT_SECRET: 's'.repeat(48),
   MONGODB_URI: 'mongodb://service-user:strong-local-pass@database:27017/service',
+  POST_SERVICE_URL: 'http://post-service:3002',
 };
 
 describe('environment configuration', () => {
@@ -14,6 +15,7 @@ describe('environment configuration', () => {
       PORT: '4101',
       JWT_SECRET: 'test_secret',
       MONGODB_URI: 'mongodb://localhost/service_test',
+      POST_SERVICE_URL: 'http://localhost:3002',
     });
 
     expect(config).toMatchObject({ nodeEnv: 'test', port: 4101 });
@@ -27,6 +29,9 @@ describe('environment configuration', () => {
   it('rejects missing production credentials', () => {
     expect(() => parseEnv({ ...productionConfig, JWT_SECRET: undefined })).toThrow(/JWT_SECRET/);
     expect(() => parseEnv({ ...productionConfig, MONGODB_URI: undefined })).toThrow(/MONGODB_URI/);
+    expect(() => parseEnv({ ...productionConfig, POST_SERVICE_URL: undefined })).toThrow(
+      /POST_SERVICE_URL/
+    );
   });
 
   it('rejects placeholder credentials', () => {
