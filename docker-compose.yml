@@ -124,6 +124,8 @@ services:
         condition: service_healthy
       comment-db:
         condition: service_started
+      follow-db:
+        condition: service_started
     networks:
       - breezy-network
     restart: unless-stopped
@@ -139,6 +141,21 @@ services:
       MONGO_INITDB_DATABASE: breezy_comments
     volumes:
       - comment_db_data:/data/db
+    networks:
+      - breezy-network
+    restart: unless-stopped
+
+  follow-db:
+    image: mongo:latest
+    container_name: breezy-follow-db
+    ports:
+      - '27021:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?MONGO_ROOT_USER is required}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
+      MONGO_INITDB_DATABASE: breezy_follow
+    volumes:
+      - follow_db_data:/data/db
     networks:
       - breezy-network
     restart: unless-stopped
@@ -208,6 +225,7 @@ volumes:
   auth_db_data:
   post_db_data:
   comment_db_data:
+  follow_db_data:
   profile_db_data:
   minio_data:
 
