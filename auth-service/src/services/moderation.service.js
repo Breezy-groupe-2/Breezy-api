@@ -14,6 +14,7 @@ const serializeReport = (report) => ({
   count: report.count,
   time: report.createdAt.toISOString(),
   text: report.text,
+  ...(report.postId ? { postId: report.postId.toString() } : {}),
   ...(report.onPostAuthor?.username
     ? {
         onPostAuthor: {
