@@ -10,8 +10,7 @@ const services = [
   { path: '/api/v1/posts/swagger.json', target: 'http://post-service:3002/api/v1/posts/swagger.json', name: 'Posts & Likes' },
   { path: '/api/v1/comments/swagger.json', target: 'http://comment-feed-follow-service:3003/api/v1/comments/swagger.json', name: 'Comments & Replies' },
   { path: '/api/v1/follow/swagger.json', target: 'http://comment-feed-follow-service:3006/api/v1/follow/swagger.json', name: 'Follows' },
-  { path: '/api/v1/feed/swagger.json', target: 'http://comment-feed-follow-service:3004/api/v1/feed/swagger.json', name: 'Timeline Feed' },
-  { path: '/api/v1/profiles/swagger.json', target: 'http://auth-profile-service:3007/api/v1/profiles/swagger.json', name: 'User Profiles' }
+  { path: '/api/v1/feed/swagger.json', target: 'http://comment-feed-follow-service:3004/api/v1/feed/swagger.json', name: 'Timeline Feed' }
 ];
 
 // Define proxy routes in swagger-service itself to support direct port 3005 access

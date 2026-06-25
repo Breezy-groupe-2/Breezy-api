@@ -36,9 +36,9 @@ Once the containers are up and running, execute the seed command on your host ma
 npm run seed
 ```
 This script will:
-1. Connect to the databases using the exposed host ports (`27017` to `27020`).
+1. Connect to the databases using the exposed host ports (`27017` to `27019`).
 2. Clear any old data in all databases.
-3. Inject the mock accounts, follows, profiles, posts, likes, comments, and comment replies.
+3. Inject the mock accounts, follows, posts, likes, comments, and comment replies.
 
 ---
 
@@ -51,5 +51,3 @@ If you want to connect a database GUI client (like MongoDB Compass, Robo 3T, or 
   `mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@localhost:27018/breezy_posts?authSource=admin`
 - **Comments Database (`breezy_comments`)**:
   `mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@localhost:27019/breezy_comments?authSource=admin`
-- **Profiles Database (`breezy_profiles`)**:
-  `mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@localhost:27020/breezy_profiles?authSource=admin`

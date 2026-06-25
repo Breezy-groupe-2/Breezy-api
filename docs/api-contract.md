@@ -650,8 +650,7 @@ The Nginx gateway maps public paths to internal services:
 | Public Prefix                                          | Internal Service            | Port |
 | ------------------------------------------------------ | --------------------------- | ---- |
 | `/api/v1/auth`                                         | auth-profile-service        | 3001 |
-| `/api/v1/users` (auth/moderation)                      | auth-profile-service        | 3001 |
-| `/api/v1/users/:id` (profiles)                         | auth-profile-service        | 3007 |
+| `/api/v1/users` (auth, profiles, moderation)           | auth-profile-service        | 3001 |
 | `/api/v1/posts`                                        | post-service                | 3002 |
 | `/api/v1/posts/:postId/comments`                       | comment-feed-follow-service | 3003 |
 | `/api/v1/comments/:commentId/replies`                  | comment-feed-follow-service | 3003 |
