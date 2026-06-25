@@ -36,7 +36,7 @@ Once the containers are up and running, execute the seed command on your host ma
 npm run seed
 ```
 This script will:
-1. Connect to the databases using the exposed host ports (`27017` to `27019`).
+1. Connect to the databases using the exposed host ports (`27017` and `27018`).
 2. Clear any old data in all databases.
 3. Inject the mock accounts, follows, posts, likes, comments, and comment replies.
 
@@ -45,9 +45,11 @@ This script will:
 ## 🔍 Inspected Database Ports
 If you want to connect a database GUI client (like MongoDB Compass, Robo 3T, or VS Code MongoDB extension) to inspect the data on your host, use the following connection URIs:
 
-- **Auth & Follow Database (`breezy_auth`)**:
+- **Auth Database (`breezy_auth`)**:
   `mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@localhost:27017/breezy_auth?authSource=admin`
-- **Posts Database (`breezy_posts`)**:
-  `mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@localhost:27018/breezy_posts?authSource=admin`
-- **Comments Database (`breezy_comments`)**:
-  `mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@localhost:27019/breezy_comments?authSource=admin`
+- **Profile Database (`breezy_profiles`)**:
+  `mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@localhost:27020/breezy_profiles?authSource=admin`
+- **Unified DB Container (`breezy-post-follow-comment-db`)** exposed on localhost port `27018`:
+  - **Posts Database**: `mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@localhost:27018/breezy_posts?authSource=admin`
+  - **Comments Database**: `mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@localhost:27018/breezy_comments?authSource=admin`
+  - **Follow Database**: `mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@localhost:27018/breezy_follow?authSource=admin`

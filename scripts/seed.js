@@ -99,8 +99,7 @@ async function getConnectionString(uri) {
   } else {
     // on host, translate to localhost with exposed database ports
     let localPort = '27017';
-    if (host === 'post-db') localPort = '27018';
-    else if (host === 'comment-db') localPort = '27019';
+    if (host === 'post-follow-comment-db' || host === 'post-db') localPort = '27018';
 
     return uri.replace(hostAndPort, `localhost:${localPort}`);
   }

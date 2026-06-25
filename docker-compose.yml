@@ -79,14 +79,14 @@ services:
       S3_PUBLIC_URL: ${S3_PUBLIC_URL:?S3_PUBLIC_URL is required}
       COMMENT_SERVICE_URL: http://comment-feed-follow-service:3003
     depends_on:
-      - post-db
+      - post-follow-comment-db
     networks:
       - breezy-network
     restart: unless-stopped
 
-  post-db:
+  post-follow-comment-db:
     image: mongo:latest
-    container_name: breezy-post-db
+    container_name: breezy-post-follow-comment-db
     ports:
       - '27018:27017'
     environment:
@@ -94,7 +94,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
       MONGO_INITDB_DATABASE: breezy_posts
     volumes:
-      - post_db_data:/data/db
+      - post_follow_comment_db_data:/data/db
     networks:
       - breezy-network
     restart: unless-stopped
@@ -122,40 +122,8 @@ services:
     depends_on:
       auth-db:
         condition: service_healthy
-      comment-db:
+      post-follow-comment-db:
         condition: service_started
-      follow-db:
-        condition: service_started
-    networks:
-      - breezy-network
-    restart: unless-stopped
-
-  comment-db:
-    image: mongo:latest
-    container_name: breezy-comment-db
-    ports:
-      - '27019:27017'
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?MONGO_ROOT_USER is required}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
-      MONGO_INITDB_DATABASE: breezy_comments
-    volumes:
-      - comment_db_data:/data/db
-    networks:
-      - breezy-network
-    restart: unless-stopped
-
-  follow-db:
-    image: mongo:latest
-    container_name: breezy-follow-db
-    ports:
-      - '27021:27017'
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?MONGO_ROOT_USER is required}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
-      MONGO_INITDB_DATABASE: breezy_follow
-    volumes:
-      - follow_db_data:/data/db
     networks:
       - breezy-network
     restart: unless-stopped
@@ -223,9 +191,7 @@ services:
 
 volumes:
   auth_db_data:
-  post_db_data:
-  comment_db_data:
-  follow_db_data:
+  post_follow_comment_db_data:
   profile_db_data:
   minio_data:
 
