@@ -388,3 +388,44 @@ describe('PATCH /api/v1/users/me/preferences', () => {
     expect(me.body.preferences.theme).toEqual(validTheme.theme);
   });
 });
+
+describe('POST /api/v1/moderation/reports (Fx20)', () => {
+  let token;
+  const report = {
+    kind: 'post',
+    reason: 'Contenu inapproprié',
+    author: { username: 'bob', displayName: 'Bob' },
+    text: 'message offensant',
+  };
+
+  beforeEach(async () => {
+    await request(app).post('/api/v1/auth/register').send(validPayload);
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: validPayload.email, password: validPayload.password });
+    token = res.body.token;
+  });
+
+  it('lets an authenticated user file a report (201)', async () => {
+    const res = await request(app)
+      .post('/api/v1/moderation/reports')
+      .set('Authorization', `Bearer ${token}`)
+      .send(report);
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({ kind: 'post', reason: 'Contenu inapproprié' });
+    expect(res.body.author).toMatchObject({ username: 'bob' });
+  });
+
+  it('rejects an invalid reason (400)', async () => {
+    const res = await request(app)
+      .post('/api/v1/moderation/reports')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ ...report, reason: 'whatever' });
+    expect(res.status).toBe(400);
+  });
+
+  it('requires authentication (401)', async () => {
+    const res = await request(app).post('/api/v1/moderation/reports').send(report);
+    expect(res.status).toBe(401);
+  });
+});

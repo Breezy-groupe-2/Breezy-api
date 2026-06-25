@@ -56,6 +56,20 @@ const updatePreferencesSchema = z
   })
   .strict();
 
+const reportSchema = z
+  .object({
+    kind: z.enum(['post', 'comment', 'user']),
+    reason: z.enum(['Spam', 'Harcèlement', 'Contenu inapproprié', 'Désinformation']),
+    author: z.object({
+      username: z.string().min(1),
+      displayName: z.string().min(1),
+      avatarUrl: z.string().optional(),
+    }),
+    postId: z.string().optional(),
+    text: z.string().max(500).optional(),
+  })
+  .strip();
+
 const validate = (schema) => (req, res, next) => {
   const result = schema.safeParse(req.body);
   if (!result.success) {
@@ -76,5 +90,6 @@ module.exports = {
   updateProfileSchema,
   createPostSchema,
   moderationSchema,
+  reportSchema,
   updatePreferencesSchema,
 };

@@ -72,4 +72,18 @@ const listAccounts = async () => {
   }));
 };
 
-module.exports = { listReports, dismissReport, deleteContent, listAccounts };
+// A regular user flags a piece of content (post/comment) or a user account.
+// `author` is a denormalized snapshot of who/what is reported so the moderation
+// queue renders without fanning out to other services.
+const createReport = async ({ kind, reason, author, postId, text }) => {
+  const report = await Report.create({
+    kind,
+    reason,
+    author,
+    text: text ?? '',
+    ...(postId ? { postId } : {}),
+  });
+  return serializeReport(report);
+};
+
+module.exports = { listReports, createReport, dismissReport, deleteContent, listAccounts };

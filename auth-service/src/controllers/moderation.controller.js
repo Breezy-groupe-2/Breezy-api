@@ -9,6 +9,15 @@ const getReports = async (_req, res, next) => {
   }
 };
 
+const createReport = async (req, res, next) => {
+  try {
+    const report = await moderationService.createReport(req.body);
+    res.status(201).json(report);
+  } catch (err) {
+    next(err);
+  }
+};
+
 const dismissReport = async (req, res, next) => {
   try {
     await moderationService.dismissReport(req.params.id);
@@ -36,4 +45,4 @@ const getAccounts = async (_req, res, next) => {
   }
 };
 
-module.exports = { getReports, dismissReport, deleteContent, getAccounts };
+module.exports = { getReports, createReport, dismissReport, deleteContent, getAccounts };
