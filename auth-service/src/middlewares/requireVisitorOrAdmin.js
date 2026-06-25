@@ -6,7 +6,7 @@ const { env } = require('../config/env');
  * regular users and moderators.
  *
  * Used on POST /auth/register to match the project rights matrix:
- *   Visiteur ✅ | Utilisateur ❌ | Modérateur ❌ | Admin ✅
+ *   Visitor: allowed | User: blocked | Moderator: blocked | Admin: allowed
  */
 const requireVisitorOrAdmin = (req, res, next) => {
   const authHeader = req.headers.authorization;

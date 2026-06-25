@@ -47,15 +47,15 @@ const router = Router();
  *         description: Unauthorized
  */
 
-// Configuration de multer en mémoire
+// Multer in-memory storage configuration
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // Limite de 10 Mo
+    fileSize: 10 * 1024 * 1024, // 10 MB limit
   },
   fileFilter: (req, file, cb) => {
-    // N'accepte que les formats image/* requis par le front
+    // Accept only image/* formats required by the frontend
     if (!file.mimetype.startsWith('image/')) {
       return cb(new Error('Only image files are allowed'), false);
     }

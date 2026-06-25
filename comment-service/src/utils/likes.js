@@ -12,7 +12,7 @@ const likeTarget = async (targetId, userId) => {
   try {
     await CommentLike.create({ target: targetId, user: userId });
   } catch (err) {
-    if (err.code !== 11000) throw err; // already liked — idempotent
+    if (err.code !== 11000) throw err; // already liked - idempotent
   }
   const likeCount = await CommentLike.countDocuments({ target: targetId });
   return { id: targetId, likeCount };
