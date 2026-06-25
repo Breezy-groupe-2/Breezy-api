@@ -47,9 +47,7 @@ If you want to connect a database GUI client (like MongoDB Compass, Robo 3T, or 
 
 - **Auth Database (`breezy_auth`)**:
   `mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@localhost:27017/breezy_auth?authSource=admin`
-- **Profile Database (`breezy_profiles`)**:
-  `mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@localhost:27020/breezy_profiles?authSource=admin`
 - **Unified DB Container (`breezy-post-follow-comment-db`)** exposed on localhost port `27018`:
   - **Posts Database**: `mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@localhost:27018/breezy_posts?authSource=admin`
   - **Comments Database**: `mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@localhost:27018/breezy_comments?authSource=admin`
-  - **Follow Database**: `mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@localhost:27018/breezy_follow?authSource=admin`
+  - **Follow Database**: `mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@localhost:27018/breezy_follows?authSource=admin`
