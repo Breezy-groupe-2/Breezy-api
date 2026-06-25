@@ -21,7 +21,7 @@ const parseEnv = (source) => {
   const production = result.data.NODE_ENV === 'production';
   const jwtSecret = result.data.JWT_SECRET || (production ? '' : 'test_secret');
   const mongodbUri =
-    result.data.MONGODB_URI || (production ? '' : 'mongodb://localhost/breezy_auth');
+    result.data.MONGODB_URI || (production ? '' : 'mongodb://localhost/breezy_follow');
   const invalid = [];
 
   if ((production && jwtSecret.length < 32) || placeholderPattern.test(jwtSecret)) {
