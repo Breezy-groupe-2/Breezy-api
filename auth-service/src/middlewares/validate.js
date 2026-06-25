@@ -58,17 +58,10 @@ const updatePreferencesSchema = z
 
 const reportSchema = z
   .object({
-    kind: z.enum(['post', 'comment', 'user']),
+    postId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Post id must be a valid Mongo id'),
     reason: z.enum(['Spam', 'Harcèlement', 'Contenu inapproprié', 'Désinformation']),
-    author: z.object({
-      username: z.string().min(1),
-      displayName: z.string().min(1),
-      avatarUrl: z.string().optional(),
-    }),
-    postId: z.string().optional(),
-    text: z.string().max(500).optional(),
   })
-  .strip();
+  .strict();
 
 const validate = (schema) => (req, res, next) => {
   const result = schema.safeParse(req.body);

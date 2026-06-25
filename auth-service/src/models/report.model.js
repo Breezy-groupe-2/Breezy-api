@@ -1,13 +1,12 @@
 const mongoose = require('mongoose');
 
-// A moderation report flags a piece of content (post or comment) for review.
-// Author/onPostAuthor are denormalized snapshots so the moderation queue can be
-// rendered without fanning out to the post/comment services.
+// A moderation report flags a post for review. Author/onPostAuthor are
+// denormalized snapshots so the moderation queue can render without fanning out.
 const reportSchema = new mongoose.Schema(
   {
     kind: {
       type: String,
-      enum: ['post', 'comment', 'user'],
+      enum: ['post'],
       required: true,
     },
     reason: {
@@ -32,6 +31,16 @@ const reportSchema = new mongoose.Schema(
         _id: false,
       },
       default: undefined,
+    },
+    reporter: {
+      type: {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        username: { type: String, required: true },
+        displayName: { type: String, required: true },
+        avatarUrl: { type: String },
+        _id: false,
+      },
+      required: true,
     },
     count: {
       type: Number,

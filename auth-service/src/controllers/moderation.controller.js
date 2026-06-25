@@ -11,7 +11,11 @@ const getReports = async (_req, res, next) => {
 
 const createReport = async (req, res, next) => {
   try {
-    const report = await moderationService.createReport(req.body);
+    const report = await moderationService.createReport({
+      postId: req.body.postId,
+      reason: req.body.reason,
+      reporterId: req.user.sub,
+    });
     res.status(201).json(report);
   } catch (err) {
     next(err);

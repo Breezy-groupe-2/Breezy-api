@@ -2,9 +2,11 @@ const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
 const request = require('supertest');
 const app = require('../app');
+const Report = require('../models/report.model');
 const User = require('../models/user.model');
 
 let mongod;
+const originalFetch = global.fetch;
 
 beforeAll(async () => {
   mongod = await MongoMemoryServer.create();
@@ -17,6 +19,8 @@ afterAll(async () => {
 });
 
 afterEach(async () => {
+  global.fetch = originalFetch;
+  await Report.deleteMany({});
   await User.deleteMany({});
 });
 
@@ -391,11 +395,20 @@ describe('PATCH /api/v1/users/me/preferences', () => {
 
 describe('POST /api/v1/moderation/reports (Fx20)', () => {
   let token;
+  const postId = new mongoose.Types.ObjectId().toString();
+  const postSnapshot = {
+    id: postId,
+    content: 'Trusted post content',
+    author: {
+      id: new mongoose.Types.ObjectId().toString(),
+      username: 'actualauthor',
+      displayName: 'Actual Author',
+      avatarUrl: 'https://cdn.example.test/avatar.png',
+    },
+  };
   const report = {
-    kind: 'post',
+    postId,
     reason: 'Contenu inapproprié',
-    author: { username: 'bob', displayName: 'Bob' },
-    text: 'message offensant',
   };
 
   beforeEach(async () => {
@@ -404,16 +417,39 @@ describe('POST /api/v1/moderation/reports (Fx20)', () => {
       .post('/api/v1/auth/login')
       .send({ email: validPayload.email, password: validPayload.password });
     token = res.body.token;
+    global.fetch = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => postSnapshot,
+    });
   });
 
-  it('lets an authenticated user file a report (201)', async () => {
+  it('lets an authenticated user file a post report from a trusted post snapshot (201)', async () => {
     const res = await request(app)
       .post('/api/v1/moderation/reports')
       .set('Authorization', `Bearer ${token}`)
       .send(report);
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({ kind: 'post', reason: 'Contenu inapproprié' });
-    expect(res.body.author).toMatchObject({ username: 'bob' });
+    expect(res.body.author).toMatchObject({
+      username: 'actualauthor',
+      displayName: 'Actual Author',
+      avatarUrl: 'https://cdn.example.test/avatar.png',
+    });
+    expect(res.body.text).toBe('Trusted post content');
+    expect(res.body.postId).toBe(postId);
+  });
+
+  it('rejects client-supplied snapshot fields so reports cannot be spoofed (400)', async () => {
+    const res = await request(app)
+      .post('/api/v1/moderation/reports')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        ...report,
+        author: { username: 'spoofed', displayName: 'Spoofed User' },
+        text: 'fake report content',
+      });
+    expect(res.status).toBe(400);
   });
 
   it('rejects an invalid reason (400)', async () => {
@@ -422,6 +458,42 @@ describe('POST /api/v1/moderation/reports (Fx20)', () => {
       .set('Authorization', `Bearer ${token}`)
       .send({ ...report, reason: 'whatever' });
     expect(res.status).toBe(400);
+  });
+
+  it('rejects an invalid post id (400)', async () => {
+    const res = await request(app)
+      .post('/api/v1/moderation/reports')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ ...report, postId: 'not-an-id' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 404 when the reported post does not exist', async () => {
+    global.fetch = async () => ({
+      ok: false,
+      status: 404,
+      json: async () => ({ error: 'Post not found' }),
+    });
+
+    const res = await request(app)
+      .post('/api/v1/moderation/reports')
+      .set('Authorization', `Bearer ${token}`)
+      .send(report);
+    expect(res.status).toBe(404);
+  });
+
+  it('returns 502 when post-service cannot provide the trusted snapshot', async () => {
+    global.fetch = async () => ({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: 'failed' }),
+    });
+
+    const res = await request(app)
+      .post('/api/v1/moderation/reports')
+      .set('Authorization', `Bearer ${token}`)
+      .send(report);
+    expect(res.status).toBe(502);
   });
 
   it('requires authentication (401)', async () => {

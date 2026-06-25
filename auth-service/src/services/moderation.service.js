@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { env } = require('../config/env');
 const Report = require('../models/report.model');
 const User = require('../models/user.model');
 
@@ -30,6 +31,41 @@ const notFound = (message) => {
   err.status = 404;
   return err;
 };
+
+const upstreamError = (message) => {
+  const err = new Error(message);
+  err.status = 502;
+  return err;
+};
+
+const postServiceUrl = () => env.postServiceUrl.replace(/\/$/, '');
+
+const fetchReportedPost = async (postId) => {
+  let response;
+  try {
+    response = await fetch(`${postServiceUrl()}/api/v1/posts/${postId}`);
+  } catch {
+    throw upstreamError('Post service unavailable');
+  }
+
+  if (response.status === 404) {
+    throw notFound('Post not found');
+  }
+  if (!response.ok) {
+    throw upstreamError('Post service unavailable');
+  }
+  const post = await response.json();
+  if (!post?.author?.username) {
+    throw upstreamError('Post service unavailable');
+  }
+  return post;
+};
+
+const toSnapshot = (user) => ({
+  username: user.username,
+  displayName: user.displayName || user.username,
+  avatarUrl: user.avatarUrl || '',
+});
 
 const listReports = async () => {
   const reports = await Report.find({ status: 'pending' }).sort({ createdAt: -1 });
@@ -72,16 +108,35 @@ const listAccounts = async () => {
   }));
 };
 
-// A regular user flags a piece of content (post/comment) or a user account.
-// `author` is a denormalized snapshot of who/what is reported so the moderation
-// queue renders without fanning out to other services.
-const createReport = async ({ kind, reason, author, postId, text }) => {
+// A regular active user flags a post. The reported post snapshot is fetched
+// server-side so clients cannot spoof moderation queue content.
+const createReport = async ({ postId, reason, reporterId }) => {
+  if (!mongoose.Types.ObjectId.isValid(postId)) {
+    throw notFound('Post not found');
+  }
+  const [post, reporter] = await Promise.all([
+    fetchReportedPost(postId),
+    User.findById(reporterId).select('username displayName avatarUrl'),
+  ]);
+  if (!reporter) {
+    throw notFound('User not found');
+  }
+
+  const postAuthor = post.author ?? {};
   const report = await Report.create({
-    kind,
+    kind: 'post',
     reason,
-    author,
-    text: text ?? '',
-    ...(postId ? { postId } : {}),
+    author: {
+      username: postAuthor.username,
+      displayName: postAuthor.displayName || postAuthor.username,
+      avatarUrl: postAuthor.avatarUrl || '',
+    },
+    postId,
+    text: post.content || '',
+    reporter: {
+      userId: reporter._id,
+      ...toSnapshot(reporter),
+    },
   });
   return serializeReport(report);
 };
