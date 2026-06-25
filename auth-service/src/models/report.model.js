@@ -21,6 +21,10 @@ const reportSchema = new mongoose.Schema(
       avatarUrl: { type: String },
       _id: false,
     },
+    postId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Post',
+    },
     onPostAuthor: {
       type: {
         username: { type: String, required: true },

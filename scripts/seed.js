@@ -286,6 +286,19 @@ async function seed() {
     content: 'Does anyone else love the clean #darkmode aesthetic? #design',
     author: charlieId
   });
+  // Posts that will be reported for moderation (created so reports reference real content)
+  const post5 = await Post.create({
+    content: 'GAGNE 500€/JOUR depuis chez toi 💸💸 clique sur mon lien en bio, places limitées !!!',
+    author: eveId
+  });
+  const post6 = await Post.create({
+    content: "franchement t'es nul, arrête de poster, personne te lit de toute façon.",
+    author: davidId
+  });
+  const post7 = await Post.create({
+    content: "source : « mon cousin l'a dit ». donc c'est forcément vrai, arrêtez de vérifier.",
+    author: bobId
+  });
   console.log('✅ Posts seeded.');
 
   // 8. Seed Likes
@@ -335,6 +348,7 @@ async function seed() {
       kind: 'post',
       reason: 'Spam',
       author: { username: 'eve', displayName: 'Eve', avatarUrl: '' },
+      postId: post5._id,
       count: 4,
       text: 'GAGNE 500€/JOUR depuis chez toi 💸💸 clique sur mon lien en bio, places limitées !!!'
     },
@@ -342,6 +356,7 @@ async function seed() {
       kind: 'comment',
       reason: 'Harcèlement',
       author: { username: 'david', displayName: 'David', avatarUrl: '' },
+      postId: post6._id,
       onPostAuthor: { username: 'charlie', displayName: 'Charlie' },
       count: 7,
       text: "franchement t'es nul, arrête de poster, personne te lit de toute façon."
@@ -350,6 +365,7 @@ async function seed() {
       kind: 'post',
       reason: 'Désinformation',
       author: { username: 'bob', displayName: 'Bob', avatarUrl: '' },
+      postId: post7._id,
       count: 3,
       text: "source : « mon cousin l'a dit ». donc c'est forcément vrai, arrêtez de vérifier."
     }
