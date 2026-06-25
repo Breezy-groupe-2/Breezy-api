@@ -2,14 +2,18 @@ const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
+
+process.env.JWT_SECRET = 'test_secret';
+process.env.S3_ENDPOINT = 'http://localhost:9000';
+process.env.S3_ACCESS_KEY_ID = 'test-access-key';
+process.env.S3_SECRET_ACCESS_KEY = 'test-secret-key';
+
 const { app, models, mongoose: authMongoose } = require('../../../auth-service/src/tests/helpers/api-test-utils');
 
 const { Post, User } = models;
 
 let mongod;
 let token;
-
-process.env.JWT_SECRET = 'test_secret';
 
 const userPayload = {
   username: 'testuser',
@@ -190,8 +194,8 @@ describe('GET /api/v1/posts/search', () => {
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(2);
-    expect(res.body.every((p) => /breezy/i.test(p.content))).toBe(true);
+    expect(res.body.data).toHaveLength(2);
+    expect(res.body.data.every((p) => /breezy/i.test(p.content))).toBe(true);
   });
 
   it('returns an empty array for a blank query', async () => {
@@ -201,7 +205,7 @@ describe('GET /api/v1/posts/search', () => {
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([]);
+    expect(res.body.data).toEqual([]);
   });
 });
 
@@ -228,8 +232,8 @@ describe('GET /api/v1/posts/liked/:userId', () => {
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(1);
-    expect(res.body[0]).toMatchObject({ id: liked.id, content: 'Liked one', isLiked: true });
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0]).toMatchObject({ id: liked.id, content: 'Liked one', isLiked: true });
   });
 
   it('returns an empty array when the user liked nothing', async () => {
@@ -239,7 +243,7 @@ describe('GET /api/v1/posts/liked/:userId', () => {
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([]);
+    expect(res.body.data).toEqual([]);
   });
 });
 
@@ -349,7 +353,7 @@ describe('reposts', () => {
       .get('/api/v1/posts/all')
       .set('Authorization', `Bearer ${token}`);
 
-    const contents = feed.body.map((p) => p.content);
+    const contents = feed.body.data.map((p) => p.content);
     // the original and the quote appear; the empty plain repost does not
     expect(contents).toContain('Solo original');
     expect(contents).toContain('Quoting it');

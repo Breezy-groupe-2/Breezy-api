@@ -12,6 +12,12 @@ const Follow = require('../../../../follow-service/src/models/follow.model');
 const Like = require('../../../../post-service/src/models/like.model');
 const Post = require('../../../../post-service/src/models/post.model');
 
+// Each service has its own mongoose instance in node_modules.
+// Collect every unique connection so setupAcceptanceDb can connect them all.
+const serviceMongooseInstances = [User, Follow, Post]
+  .map((m) => m.db)
+  .filter((conn, idx, arr) => arr.indexOf(conn) === idx);
+
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_secret';
 
 const app = express();
@@ -38,19 +44,14 @@ const clearDatabase = async () => {
   ]);
 };
 
-let postMongoose;
-try {
-  postMongoose = require('../../../../post-service/node_modules/mongoose');
-} catch {
-  postMongoose = require('mongoose');
-}
-
 const setupAcceptanceDb = () => {
   beforeAll(async () => {
     mongod = await MongoMemoryServer.create();
     const uri = mongod.getUri();
-    await mongoose.connect(uri);
-    await postMongoose.connect(uri);
+    await Promise.all([
+      mongoose.connect(uri),
+      ...serviceMongooseInstances.map((conn) => conn.openUri(uri)),
+    ]);
     server = app.listen(0);
     const serviceUrl = `http://127.0.0.1:${server.address().port}`;
     process.env.AUTH_SERVICE_URL = serviceUrl;
@@ -72,8 +73,10 @@ const setupAcceptanceDb = () => {
         server.close((err) => (err ? reject(err) : resolve()));
       });
     }
-    await mongoose.disconnect();
-    await postMongoose.disconnect();
+    await Promise.all([
+      mongoose.disconnect(),
+      ...serviceMongooseInstances.map((conn) => conn.close()),
+    ]);
     if (mongod) {
       await mongod.stop();
     }

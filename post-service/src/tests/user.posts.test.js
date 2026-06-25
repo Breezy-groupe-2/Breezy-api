@@ -1,6 +1,12 @@
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
 const request = require('supertest');
+
+process.env.JWT_SECRET = 'test_secret';
+process.env.S3_ENDPOINT = 'http://localhost:9000';
+process.env.S3_ACCESS_KEY_ID = 'test-access-key';
+process.env.S3_SECRET_ACCESS_KEY = 'test-secret-key';
+
 const { app, models, mongoose: authMongoose } = require('../../../auth-service/src/tests/helpers/api-test-utils');
 
 const { Post, User } = models;
@@ -8,8 +14,6 @@ const { Post, User } = models;
 let mongod;
 let token;
 let userId;
-
-process.env.JWT_SECRET = 'test_secret';
 
 const userPayload = { username: 'testuser', email: 'test@example.com', password: 'Password123' };
 
@@ -71,7 +75,7 @@ describe('GET /api/v1/posts/user/:userId', () => {
     const res = await request(app).get(`/api/v1/posts/user/${userId}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([]);
+    expect(res.body.data).toEqual([]);
   });
 
   it('returns 200 and list of posts sorted by createdAt desc', async () => {
@@ -87,9 +91,9 @@ describe('GET /api/v1/posts/user/:userId', () => {
     const res = await request(app).get(`/api/v1/posts/user/${userId}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(2);
-    expect(res.body[0].content).toBe('Second post');
-    expect(res.body[0]).toHaveProperty('likeCount', 0);
+    expect(res.body.data).toHaveLength(2);
+    expect(res.body.data[0].content).toBe('Second post');
+    expect(res.body.data[0]).toHaveProperty('likeCount', 0);
   });
 
   it('returns 404 for invalid user id', async () => {
@@ -104,7 +108,7 @@ describe('GET /api/v1/posts/user/:userId', () => {
     const res = await request(app).get(`/api/v1/posts/user/${unknownUserId}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([]);
+    expect(res.body.data).toEqual([]);
   });
 });
 
@@ -203,8 +207,8 @@ describe('GET /api/v1/posts/me', () => {
     const res = await request(app).get('/api/v1/posts/me').set('Authorization', `Bearer ${token}`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toHaveLength(1);
-    expect(res.body[0].content).toBe('My post');
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].content).toBe('My post');
   });
 
   it('returns 401 when not authenticated', async () => {

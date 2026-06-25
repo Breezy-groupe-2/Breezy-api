@@ -1,3 +1,7 @@
+process.env.S3_ENDPOINT = 'http://localhost:9000';
+process.env.S3_ACCESS_KEY_ID = 'test-access-key';
+process.env.S3_SECRET_ACCESS_KEY = 'test-secret-key';
+
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const { app, models, setupAcceptanceDb } = require('./helpers/api-test-utils');

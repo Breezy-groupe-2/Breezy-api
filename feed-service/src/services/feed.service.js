@@ -17,13 +17,15 @@ const fetchJson = async (url, { authorization } = {}) => {
 };
 
 const getFeed = async (userId, { limit = 20 } = {}) => {
-  const following = await fetchJson(`${followServiceUrl()}/api/v1/users/${userId}/following`);
+  const followingResponse = await fetchJson(`${followServiceUrl()}/api/v1/users/${userId}/following`);
+  const following = Array.isArray(followingResponse) ? followingResponse : followingResponse.data || [];
   if (following.length === 0) {
     return [];
   }
 
   const authorIds = following.map((user) => user.id).join(',');
-  const posts = await fetchJson(`${postServiceUrl()}/api/v1/posts?authorIds=${authorIds}&limit=${limit}`);
+  const postsResponse = await fetchJson(`${postServiceUrl()}/api/v1/posts?authorIds=${authorIds}&limit=${limit}`);
+  const posts = Array.isArray(postsResponse) ? postsResponse : postsResponse.data || [];
 
   return posts
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))

@@ -181,7 +181,7 @@ describe('follow routes', () => {
     const res = await request(app).get(`/api/v1/users/${userB._id}/followers`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([
+    expect(res.body.data).toEqual([
       {
         id: userA._id.toString(),
         username: 'userA',
@@ -189,9 +189,9 @@ describe('follow routes', () => {
         avatarUrl: '',
       },
     ]);
-    expect(res.body[0]).not.toHaveProperty('email');
-    expect(res.body[0]).not.toHaveProperty('password');
-    expect(res.body[0]).not.toHaveProperty('passwordHash');
+    expect(res.body.data[0]).not.toHaveProperty('email');
+    expect(res.body.data[0]).not.toHaveProperty('password');
+    expect(res.body.data[0]).not.toHaveProperty('passwordHash');
   });
 
   it('keeps follow read endpoints public when auth-service is unavailable', async () => {
@@ -213,7 +213,7 @@ describe('follow routes', () => {
     const res = await request(app).get(`/api/v1/users/${userA._id}/following`);
 
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([
+    expect(res.body.data).toEqual([
       {
         id: userB._id.toString(),
         username: 'userB',
@@ -221,9 +221,9 @@ describe('follow routes', () => {
         avatarUrl: '',
       },
     ]);
-    expect(res.body[0]).not.toHaveProperty('email');
-    expect(res.body[0]).not.toHaveProperty('password');
-    expect(res.body[0]).not.toHaveProperty('passwordHash');
+    expect(res.body.data[0]).not.toHaveProperty('email');
+    expect(res.body.data[0]).not.toHaveProperty('password');
+    expect(res.body.data[0]).not.toHaveProperty('passwordHash');
   });
 
   it('rejects follow actions from inactive users', async () => {

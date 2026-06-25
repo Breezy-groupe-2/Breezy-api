@@ -1,6 +1,12 @@
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
 const request = require('supertest');
+
+process.env.JWT_SECRET = 'test_secret';
+process.env.S3_ENDPOINT = 'http://localhost:9000';
+process.env.S3_ACCESS_KEY_ID = 'test-access-key';
+process.env.S3_SECRET_ACCESS_KEY = 'test-secret-key';
+
 const { app, models, mongoose: authMongoose } = require('../../../auth-service/src/tests/helpers/api-test-utils');
 
 const { Post, User } = models;
@@ -9,8 +15,6 @@ let mongod;
 let token;
 let otherToken;
 let postId;
-
-process.env.JWT_SECRET = 'test_secret';
 
 const userPayload = { username: 'testuser', email: 'test@example.com', password: 'Password123' };
 const otherPayload = { username: 'otheruser', email: 'other@example.com', password: 'Password123' };

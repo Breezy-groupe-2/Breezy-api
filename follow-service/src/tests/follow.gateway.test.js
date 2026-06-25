@@ -67,7 +67,7 @@ describe('gateway split-database follow behavior', () => {
       followingId: followingId.toString(),
     });
     expect(following.status).toBe(200);
-    expect(following.body).toEqual([
+    expect(following.body.data).toEqual([
       {
         id: followingId.toString(),
         username: 'gatewayTarget',
