@@ -106,7 +106,7 @@ async function getConnectionString(uri) {
 }
 
 async function seed() {
-  console.log('🌱 Starting database seeding...');
+  console.log('Starting database seeding...');
 
   // 1. Resolve connection strings
   const authUri = await getConnectionString(process.env.MONGODB_URI);
@@ -114,12 +114,12 @@ async function seed() {
   const commentUri = await getConnectionString(process.env.COMMENT_SERVICE_MONGODB_URI);
   const followUri = await getConnectionString(process.env.FOLLOW_SERVICE_MONGODB_URI);
 
-  console.log('🔌 Connecting to databases...');
+  console.log('Connecting to databases...');
   const authConn = await mongoose.createConnection(authUri).asPromise();
   const postConn = await mongoose.createConnection(postUri).asPromise();
   const commentConn = await mongoose.createConnection(commentUri).asPromise();
   const followConn = await mongoose.createConnection(followUri).asPromise();
-  console.log('✅ Connected to all databases successfully.');
+  console.log('Connected to all databases successfully.');
 
   // Define models on respective connections
   const User = authConn.model('User', userSchema);
@@ -134,7 +134,7 @@ async function seed() {
   const Reply = commentConn.model('Reply', replySchema);
 
   // 2. Clean old data
-  console.log('🧹 Cleaning existing data...');
+  console.log('Cleaning existing data...');
   await User.deleteMany({});
   await Follow.deleteMany({});
   await Report.deleteMany({});
@@ -142,7 +142,7 @@ async function seed() {
   await Like.deleteMany({});
   await Comment.deleteMany({});
   await Reply.deleteMany({});
-  console.log('✅ Cleaned all collections.');
+  console.log('Cleaned all collections.');
 
   // 3. Define fixed IDs to link seed data correctly
   const aliceId = new mongoose.Types.ObjectId();
@@ -154,7 +154,7 @@ async function seed() {
   const passwordHash = bcrypt.hashSync('password123', 12);
 
   // 4. Seed Users
-  console.log('👤 Seeding Users...');
+  console.log('Seeding Users...');
   await User.create([
     {
       _id: aliceId,
@@ -213,20 +213,20 @@ async function seed() {
       following: []
     }
   ]);
-  console.log('✅ Users seeded.');
+  console.log('Users seeded.');
 
   // 5. Seed Follows
-  console.log('🤝 Seeding Follows...');
+  console.log('Seeding Follows...');
   await Follow.create([
     { follower: bobId, following: aliceId },
     { follower: bobId, following: charlieId },
     { follower: charlieId, following: aliceId },
     { follower: aliceId, following: bobId }
   ]);
-  console.log('✅ Follow relationships seeded.');
+  console.log('Follow relationships seeded.');
 
   // 7. Seed Posts
-  console.log('📮 Seeding Posts...');
+  console.log('Seeding Posts...');
   const post1 = await Post.create({
     content: 'Welcome to Breezy, the ultimate lightweight social network! 🚀 Keep it short and #breezy.',
     author: aliceId
@@ -256,20 +256,20 @@ async function seed() {
     content: "source : « mon cousin l'a dit ». donc c'est forcément vrai, arrêtez de vérifier.",
     author: bobId
   });
-  console.log('✅ Posts seeded.');
+  console.log('Posts seeded.');
 
   // 8. Seed Likes
-  console.log('❤️ Seeding Likes...');
+  console.log('Seeding Likes...');
   await Like.create([
     { post: post1._id, user: bobId },
     { post: post1._id, user: charlieId },
     { post: post3._id, user: aliceId },
     { post: post4._id, user: bobId }
   ]);
-  console.log('✅ Likes seeded.');
+  console.log('Likes seeded.');
 
   // 9. Seed Comments
-  console.log('💬 Seeding Comments...');
+  console.log('Seeding Comments...');
   const comment1 = await Comment.create({
     content: 'This feels incredibly fast! Great job on optimization.',
     postId: post1._id.toString(),
@@ -280,10 +280,10 @@ async function seed() {
     postId: post1._id.toString(),
     author: charlieId
   });
-  console.log('✅ Comments seeded.');
+  console.log('Comments seeded.');
 
   // 10. Seed Replies
-  console.log('🗣️ Seeding Replies...');
+  console.log('Seeding Replies...');
   await Reply.create([
     {
       content: 'Thanks, Bob! We are optimized for low-resource environments.',
@@ -296,10 +296,10 @@ async function seed() {
       author: aliceId
     }
   ]);
-  console.log('✅ Replies seeded.');
+  console.log('Replies seeded.');
 
   // 11. Seed Moderation Reports (admin dashboard queue)
-  console.log('🚨 Seeding Moderation Reports...');
+  console.log('Seeding Moderation Reports...');
   await Report.create([
     {
       kind: 'post',
@@ -327,11 +327,11 @@ async function seed() {
       text: "source : « mon cousin l'a dit ». donc c'est forcément vrai, arrêtez de vérifier."
     }
   ]);
-  console.log('✅ Moderation reports seeded.');
+  console.log('Moderation reports seeded.');
 
   // 12. Seed follow-service DB (its own user snapshots + follow edges) so the
   //     chronological feed has data without anyone clicking "follow" first.
-  console.log('🪪 Seeding follow-service snapshots & edges...');
+  console.log('Seeding follow-service snapshots and edges...');
   await FollowUser.deleteMany({});
   await FollowEdge.deleteMany({});
   const snapshot = (id, username, isActive = true) => ({
@@ -354,10 +354,10 @@ async function seed() {
     { follower: charlieId, following: aliceId },
     { follower: aliceId, following: bobId }
   ]);
-  console.log('✅ Follow-service data seeded.');
+  console.log('Follow-service data seeded.');
 
   // 13. Close Connections
-  console.log('🔌 Closing connections...');
+  console.log('Closing connections...');
   await Promise.all([
     authConn.close(),
     postConn.close(),
@@ -365,10 +365,10 @@ async function seed() {
     followConn.close()
   ]);
 
-  console.log('🎉 Database seeding complete!');
+  console.log('Database seeding complete!');
 }
 
 seed().catch(err => {
-  console.error('❌ Error seeding database:', err);
+  console.error('Error seeding database:', err);
   process.exit(1);
 });

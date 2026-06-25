@@ -11,12 +11,12 @@ const { env } = require('../config/env');
 const requireVisitorOrAdmin = (req, res, next) => {
   const authHeader = req.headers.authorization;
 
-  // No token → visitor → allow
+  // No token -> visitor -> allow
   if (!authHeader?.startsWith('Bearer ')) {
     return next();
   }
 
-  // Token present → verify and check role
+  // Token present -> verify and check role
   const token = authHeader.slice(7);
   try {
     const payload = jwt.verify(token, env.jwtSecret);
@@ -25,12 +25,12 @@ const requireVisitorOrAdmin = (req, res, next) => {
       return next();
     }
 
-    // Authenticated user or moderator → block
+    // Authenticated user or moderator -> block
     return res.status(403).json({
       error: 'Registration is restricted to visitors and administrators',
     });
   } catch {
-    // Invalid token → treat as visitor → allow (authenticate will catch it later if needed)
+    // Invalid token -> treat as visitor -> allow (authenticate will catch it later if needed)
     return next();
   }
 };
