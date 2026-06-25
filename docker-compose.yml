@@ -36,6 +36,7 @@ services:
       JWT_EXPIRE: ${JWT_EXPIRE:-7d}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       AUTH_SERVICE_URL: http://localhost:3001
+      POST_SERVICE_URL: http://post-service:3002
     depends_on:
       auth-db:
         condition: service_healthy
