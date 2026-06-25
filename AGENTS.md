@@ -40,27 +40,55 @@
 
 ## Project Structure
 
-- Use a feature-based source structure.
-- Keep app bootstrap and cross-cutting infrastructure separate from feature code.
-- Preferred shape:
+- Use a distributed microservices architecture with separate service directories.
+- Each service is a standalone npm package with its own `package.json`, `Dockerfile`, and `src/` tree.
+- Keep app bootstrap and cross-cutting infrastructure separate from feature code within each service.
+
+### Service Layout
 
 ```text
-src/
-  app.js
-  server.js
-  config/
-  shared/
-  features/
-    posts/
-      post.model.js
-      post.routes.js
-      post.controller.js
-      post.service.js
-      post.validation.js
-      post.test.js
+breezy-api/
+  auth-service/          # Authentication, users, moderation (port 3001)
+  post-service/          # Posts, likes, media uploads (port 3002)
+  comment-service/       # Comments, replies, comment likes (port 3003)
+  feed-service/          # Chronological feed (port 3004)
+  follow-service/        # Follow/unfollow relationships (port 3006)
+  swagger-service/       # API documentation aggregator (port 3005)
+  api-gateway/           # Nginx reverse proxy (port 3000)
 ```
 
-- Add new feature folders for domains such as auth, users, comments, follows, feeds, likes, and profiles.
+### Per-Service Internal Structure
+
+```text
+<service>/
+  src/
+    app.js               # Express app setup and route mounting
+    server.js            # HTTP server startup
+    config/
+      env.js             # Zod environment validation
+      database.js        # MongoDB connection
+      swagger.js         # OpenAPI spec (optional)
+    controllers/         # Thin request/response handlers
+    middlewares/          # authenticate, validate, checkActive, etc.
+    models/              # Mongoose schemas
+    routes/              # Express Router definitions
+    services/            # Business logic
+    tests/               # Vitest + Supertest tests
+```
+
+### Docker Container Grouping
+
+Services are grouped into Docker containers:
+- `auth-profile-service` container: auth-service (port 3001)
+- `comment-feed-follow-service` container: comment-service (3003), feed-service (3004), follow-service (3006)
+- `post-service` container: post-service (port 3002)
+- `swagger-service` container: swagger-service (port 3005)
+- `api-gateway` container: nginx reverse proxy (port 3000)
+
+### Validation
+
+- Use Zod for request validation in `middlewares/validate.js` files.
+- Use Zod for environment variable validation in `config/env.js` files.
 
 ## Git Workflow
 

@@ -189,6 +189,28 @@ Returns the authenticated user's account details.
 - `401 Unauthorized` — missing or invalid token.
 - `403 Forbidden` — account is suspended.
 
+### Google OAuth Login
+
+```text
+POST /auth/google
+```
+
+Authenticates via Google OAuth and returns a JWT.
+
+**Request body:**
+
+```json
+{
+  "idToken": "google-id-token-string"
+}
+```
+
+**Responses:**
+
+- `200 OK` — authentication successful, returns token and user.
+- `401 Unauthorized` — invalid Google token.
+- `403 Forbidden` — account is suspended.
+
 ---
 
 ## Users
@@ -316,6 +338,40 @@ Validation:
 - `200 OK` — moderation applied.
 - `403 Forbidden` — caller lacks moderator role.
 - `404 Not Found` — target user not found.
+
+### Search Users
+
+```text
+GET /users/search?q=:query
+```
+
+Searches users by username or display name.
+
+**Auth:** required.
+
+**Query parameters:**
+
+- `q`: required, search query string.
+
+**Responses:**
+
+- `200 OK` — array of [User Summary](#user-summary) objects.
+- `401 Unauthorized` — missing or invalid token.
+
+### Get User Suggestions
+
+```text
+GET /users/suggestions
+```
+
+Returns suggested users to follow.
+
+**Auth:** required.
+
+**Responses:**
+
+- `200 OK` — array of [User Summary](#user-summary) objects.
+- `401 Unauthorized` — missing or invalid token.
 
 ---
 
@@ -455,6 +511,132 @@ Removes a like from a post.
 - `401 Unauthorized` — missing or invalid token.
 - `404 Not Found` — post not found.
 
+### Get Single Post
+
+```text
+GET /posts/:id
+```
+
+Returns a single post by ID.
+
+**Auth:** none.
+
+**Responses:**
+
+- `200 OK` — returns a [Post](#post).
+- `404 Not Found` — post not found.
+
+### Delete Post
+
+```text
+DELETE /posts/:id
+```
+
+Deletes a post. Only the original author may delete it.
+
+**Auth:** required.
+
+**Responses:**
+
+- `200 OK` — post deleted.
+- `401 Unauthorized` — missing or invalid token.
+- `403 Forbidden` — caller is not the author.
+- `404 Not Found` — post not found.
+
+### List All Posts
+
+```text
+GET /posts/all
+```
+
+Returns all posts (global feed).
+
+**Auth:** none.
+
+**Responses:**
+
+- `200 OK` — array of [Post](#post) objects.
+
+### Search Posts
+
+```text
+GET /posts/search?q=:query
+```
+
+Searches posts by content.
+
+**Auth:** none.
+
+**Query parameters:**
+
+- `q`: required, search query string.
+
+**Responses:**
+
+- `200 OK` — array of [Post](#post) objects.
+
+### Get Trending Posts
+
+```text
+GET /posts/trends
+```
+
+Returns trending posts.
+
+**Auth:** none.
+
+**Responses:**
+
+- `200 OK` — array of [Post](#post) objects.
+
+### Get User's Liked Posts
+
+```text
+GET /posts/liked/:userId
+```
+
+Returns posts liked by a specific user.
+
+**Auth:** none.
+
+**Responses:**
+
+- `200 OK` — array of [Post](#post) objects.
+- `404 Not Found` — user not found.
+
+### Repost Post
+
+```text
+POST /posts/:id/repost
+```
+
+Reposts a post.
+
+**Auth:** required.
+
+**Responses:**
+
+- `200 OK` — repost created.
+- `401 Unauthorized` — missing or invalid token.
+- `404 Not Found` — post not found.
+- `409 Conflict` — already reposted.
+
+### Unrepost Post
+
+```text
+DELETE /posts/:id/repost
+```
+
+Removes a repost.
+
+**Auth:** required.
+
+**Responses:**
+
+- `200 OK` — repost removed.
+- `401 Unauthorized` — missing or invalid token.
+- `404 Not Found` — post not found.
+
 ---
 
 ## Comments
@@ -537,6 +719,73 @@ Returns replies for a comment in chronological order.
 - `200 OK` — array of [Reply](#reply) objects.
 - `400 Bad Request` — invalid ID format.
 
+### Delete Comment
+
+```text
+DELETE /posts/:postId/comments/:commentId
+```
+
+Deletes a comment. Only the original author may delete it.
+
+**Auth:** required.
+
+**Responses:**
+
+- `200 OK` — comment deleted.
+- `401 Unauthorized` — missing or invalid token.
+- `403 Forbidden` — caller is not the author.
+- `404 Not Found` — comment not found.
+
+### Delete Reply
+
+```text
+DELETE /comments/:commentId/replies/:replyId
+```
+
+Deletes a reply. Only the original author may delete it.
+
+**Auth:** required.
+
+**Responses:**
+
+- `200 OK` — reply deleted.
+- `401 Unauthorized` — missing or invalid token.
+- `403 Forbidden` — caller is not the author.
+- `404 Not Found` — reply not found.
+
+### Like Comment
+
+```text
+POST /comments/:id/like
+```
+
+Likes a comment.
+
+**Auth:** required.
+
+**Responses:**
+
+- `200 OK` — like added.
+- `401 Unauthorized` — missing or invalid token.
+- `404 Not Found` — comment not found.
+- `409 Conflict` — already liked.
+
+### Unlike Comment
+
+```text
+DELETE /comments/:id/like
+```
+
+Removes a like from a comment.
+
+**Auth:** required.
+
+**Responses:**
+
+- `200 OK` — like removed.
+- `401 Unauthorized` — missing or invalid token.
+- `404 Not Found` — comment not found.
+
 ---
 
 ## Follows
@@ -583,12 +832,12 @@ GET /users/:id/followers
 
 Returns the followers of a user.
 
-**Auth:** required.
+**Auth:** none.
 
 **Responses:**
 
 - `200 OK` — array of [User Summary](#user-summary) objects.
-- `401 Unauthorized` — missing or invalid token.
+- `404 Not Found` — user not found.
 
 ### List Following
 
@@ -598,12 +847,12 @@ GET /users/:id/following
 
 Returns the users a user is following.
 
-**Auth:** required.
+**Auth:** none.
 
 **Responses:**
 
 - `200 OK` — array of [User Summary](#user-summary) objects.
-- `401 Unauthorized` — missing or invalid token.
+- `404 Not Found` — user not found.
 
 ---
 
@@ -630,6 +879,125 @@ Returns a chronological feed of posts from users the authenticated user follows,
 
 ---
 
+## Media
+
+### Upload Media
+
+```text
+POST /media/upload
+```
+
+Uploads an image file to S3-compatible storage (MinIO).
+
+**Auth:** required.
+
+**Request:** `multipart/form-data` with `file` field.
+
+**Validation:**
+
+- File size: max 10MB.
+- Accepted types: images only.
+
+**Responses:**
+
+- `200 OK` — returns `{ url: "https://..." }`.
+- `401 Unauthorized` — missing or invalid token.
+- `413 Payload Too Large` — file exceeds 10MB limit.
+
+---
+
+## Moderation
+
+### File Report
+
+```text
+POST /moderation/reports
+```
+
+Files a moderation report against a user or content.
+
+**Auth:** required.
+
+**Request body:**
+
+```json
+{
+  "type": "post",
+  "targetId": "651a3c4d5e6f7a8b9c0d1e2f",
+  "reason": "Inappropriate content"
+}
+```
+
+**Responses:**
+
+- `201 Created` — report filed.
+- `400 Bad Request` — validation failed.
+- `401 Unauthorized` — missing or invalid token.
+
+### List Reports
+
+```text
+GET /moderation/reports
+```
+
+Returns all moderation reports. Restricted to moderators and admins.
+
+**Auth:** required, moderator or admin role.
+
+**Responses:**
+
+- `200 OK` — array of report objects.
+- `403 Forbidden` — caller lacks moderator role.
+
+### Dismiss Report
+
+```text
+POST /moderation/reports/:id/dismiss
+```
+
+Dismisses a moderation report. Restricted to moderators and admins.
+
+**Auth:** required, moderator or admin role.
+
+**Responses:**
+
+- `200 OK` — report dismissed.
+- `403 Forbidden` — caller lacks moderator role.
+- `404 Not Found` — report not found.
+
+### Delete Reported Content
+
+```text
+DELETE /moderation/content/:reportId
+```
+
+Deletes content associated with a report. Restricted to moderators and admins.
+
+**Auth:** required, moderator or admin role.
+
+**Responses:**
+
+- `200 OK` — content deleted.
+- `403 Forbidden` — caller lacks moderator role.
+- `404 Not Found` — report not found.
+
+### List Accounts
+
+```text
+GET /moderation/accounts
+```
+
+Returns user accounts for moderation review. Restricted to moderators and admins.
+
+**Auth:** required, moderator or admin role.
+
+**Responses:**
+
+- `200 OK` — array of user objects.
+- `403 Forbidden` — caller lacks moderator role.
+
+---
+
 ## Status Code Summary
 
 | Code                        | Meaning                                                      |
@@ -651,9 +1019,12 @@ The Nginx gateway maps public paths to internal services:
 | ------------------------------------------------------ | --------------------------- | ---- |
 | `/api/v1/auth`                                         | auth-profile-service        | 3001 |
 | `/api/v1/users` (auth, profiles, moderation)           | auth-profile-service        | 3001 |
+| `/api/v1/moderation`                                   | auth-profile-service        | 3001 |
 | `/api/v1/posts`                                        | post-service                | 3002 |
+| `/api/v1/media`                                        | post-service                | 3002 |
 | `/api/v1/posts/:postId/comments`                       | comment-feed-follow-service | 3003 |
 | `/api/v1/comments/:commentId/replies`                  | comment-feed-follow-service | 3003 |
+| `/api/v1/comments`                                     | comment-feed-follow-service | 3003 |
 | `/api/v1/users/:id/follow`, `/followers`, `/following` | comment-feed-follow-service | 3006 |
 | `/api/v1/feed`                                         | comment-feed-follow-service | 3004 |
 | `/api-docs`                                            | swagger-service             | 3005 |

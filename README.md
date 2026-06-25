@@ -91,3 +91,4 @@ Compose uses required interpolation for credentials and exits before startup whe
 - [Tooling](docs/tooling.md)
 - [Git workflow](docs/git-workflow.md)
 - [API conventions](docs/api-conventions.md)
+- [API contract](docs/api-contract.md)
