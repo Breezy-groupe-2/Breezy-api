@@ -201,14 +201,18 @@ Authenticates via Google OAuth and returns a JWT.
 
 ```json
 {
-  "idToken": "google-id-token-string"
+  "credential": "google-id-token-string"
 }
 ```
+
+Validation:
+
+- `credential`: required, non-empty Google ID token string.
 
 **Responses:**
 
 - `200 OK` — authentication successful, returns token and user.
-- `401 Unauthorized` — invalid Google token.
+- `401 Unauthorized` — invalid Google credential.
 - `403 Forbidden` — account is suspended.
 
 ---
@@ -538,7 +542,7 @@ Deletes a post. Only the original author may delete it.
 
 **Responses:**
 
-- `200 OK` — post deleted.
+- `204 No Content` — post deleted successfully.
 - `401 Unauthorized` — missing or invalid token.
 - `403 Forbidden` — caller is not the author.
 - `404 Not Found` — post not found.
@@ -549,7 +553,7 @@ Deletes a post. Only the original author may delete it.
 GET /posts/all
 ```
 
-Returns all posts (global feed).
+Returns the global timeline containing the most recent posts (up to 50, sorted newest first). Plain reposts (reposts without comment text) are excluded.
 
 **Auth:** none.
 
@@ -575,19 +579,30 @@ Searches posts by content.
 
 - `200 OK` — array of [Post](#post) objects.
 
-### Get Trending Posts
+### Get Trending Tags
 
 ```text
 GET /posts/trends
 ```
 
-Returns trending posts.
+Returns trending hashtags aggregated from post contents, sorted by frequency descending.
 
 **Auth:** none.
 
 **Responses:**
 
-- `200 OK` — array of [Post](#post) objects.
+- `200 OK` — array of tag objects.
+
+  Example response:
+
+  ```json
+  [
+    {
+      "tag": "#breezy",
+      "count": 5
+    }
+  ]
+  ```
 
 ### Get User's Liked Posts
 
@@ -610,16 +625,15 @@ Returns posts liked by a specific user.
 POST /posts/:id/repost
 ```
 
-Reposts a post.
+Reposts a post. Idempotent: returns the existing repost if the post was already reposted by the user.
 
 **Auth:** required.
 
 **Responses:**
 
-- `200 OK` — repost created.
+- `201 Created` — returns the [Post](#post) object (newly created or existing repost).
 - `401 Unauthorized` — missing or invalid token.
 - `404 Not Found` — post not found.
-- `409 Conflict` — already reposted.
 
 ### Unrepost Post
 
@@ -633,7 +647,7 @@ Removes a repost.
 
 **Responses:**
 
-- `200 OK` — repost removed.
+- `204 No Content` — repost removed successfully.
 - `401 Unauthorized` — missing or invalid token.
 - `404 Not Found` — post not found.
 
@@ -731,7 +745,7 @@ Deletes a comment. Only the original author may delete it.
 
 **Responses:**
 
-- `200 OK` — comment deleted.
+- `204 No Content` — comment deleted successfully.
 - `401 Unauthorized` — missing or invalid token.
 - `403 Forbidden` — caller is not the author.
 - `404 Not Found` — comment not found.
@@ -748,43 +762,40 @@ Deletes a reply. Only the original author may delete it.
 
 **Responses:**
 
-- `200 OK` — reply deleted.
+- `204 No Content` — reply deleted successfully.
 - `401 Unauthorized` — missing or invalid token.
 - `403 Forbidden` — caller is not the author.
 - `404 Not Found` — reply not found.
 
-### Like Comment
+### Like Comment or Reply
 
 ```text
 POST /comments/:id/like
 ```
 
-Likes a comment.
+Likes a comment or a reply. Idempotent: treats duplicate likes as success. Note: This endpoint does not verify if the comment or reply target exists.
 
 **Auth:** required.
 
 **Responses:**
 
-- `200 OK` — like added.
+- `200 OK` — returns `{ id, likeCount }`.
 - `401 Unauthorized` — missing or invalid token.
-- `404 Not Found` — comment not found.
-- `409 Conflict` — already liked.
 
-### Unlike Comment
+### Unlike Comment or Reply
 
 ```text
 DELETE /comments/:id/like
 ```
 
-Removes a like from a comment.
+Removes a like from a comment or a reply. Note: This endpoint does not verify if the comment or reply target exists.
 
 **Auth:** required.
 
 **Responses:**
 
-- `200 OK` — like removed.
+- `200 OK` — returns `{ id, likeCount }`.
 - `401 Unauthorized` — missing or invalid token.
-- `404 Not Found` — comment not found.
 
 ---
 
@@ -830,14 +841,14 @@ Removes a follow relationship.
 GET /users/:id/followers
 ```
 
-Returns the followers of a user.
+Returns the followers of a user. The `:id` parameter can be either an ObjectId or a username.
 
 **Auth:** none.
 
 **Responses:**
 
-- `200 OK` — array of [User Summary](#user-summary) objects.
-- `404 Not Found` — user not found.
+- `200 OK` — array of [User Summary](#user-summary) objects. (An empty array is returned if the user has no followers, or if an ObjectId is provided and the user does not exist).
+- `404 Not Found` — user not found (only returned if requested by a username and that username does not exist).
 
 ### List Following
 
@@ -845,14 +856,14 @@ Returns the followers of a user.
 GET /users/:id/following
 ```
 
-Returns the users a user is following.
+Returns the users a user is following. The `:id` parameter can be either an ObjectId or a username.
 
 **Auth:** none.
 
 **Responses:**
 
-- `200 OK` — array of [User Summary](#user-summary) objects.
-- `404 Not Found` — user not found.
+- `200 OK` — array of [User Summary](#user-summary) objects. (An empty array is returned if the user is not following anyone, or if an ObjectId is provided and the user does not exist).
+- `404 Not Found` — user not found (only returned if requested by a username and that username does not exist).
 
 ---
 
@@ -914,7 +925,7 @@ Uploads an image file to S3-compatible storage (MinIO).
 POST /moderation/reports
 ```
 
-Files a moderation report against a user or content.
+Files a moderation report against a post.
 
 **Auth:** required.
 
@@ -922,11 +933,15 @@ Files a moderation report against a user or content.
 
 ```json
 {
-  "type": "post",
-  "targetId": "651a3c4d5e6f7a8b9c0d1e2f",
-  "reason": "Inappropriate content"
+  "postId": "651a3c4d5e6f7a8b9c0d1e2f",
+  "reason": "Contenu inapproprié"
 }
 ```
+
+Validation:
+
+- `postId`: required, valid 24-character hex MongoDB ID of the post.
+- `reason`: required, must be one of: `"Spam"`, `"Harcèlement"`, `"Contenu inapproprié"`, `"Désinformation"`.
 
 **Responses:**
 
@@ -965,19 +980,19 @@ Dismisses a moderation report. Restricted to moderators and admins.
 - `403 Forbidden` — caller lacks moderator role.
 - `404 Not Found` — report not found.
 
-### Delete Reported Content
+### Resolve Report (Actioned)
 
 ```text
 DELETE /moderation/content/:reportId
 ```
 
-Deletes content associated with a report. Restricted to moderators and admins.
+Resolves a moderation report by marking its status as `"actioned"`. Note: This endpoint does not delete the actual post or comment content, which must be deleted using the post/comment delete endpoints. Restricted to moderators and admins.
 
 **Auth:** required, moderator or admin role.
 
 **Responses:**
 
-- `200 OK` — content deleted.
+- `204 No Content` — report marked as actioned successfully.
 - `403 Forbidden` — caller lacks moderator role.
 - `404 Not Found` — report not found.
 
@@ -1004,6 +1019,7 @@ Returns user accounts for moderation review. Restricted to moderators and admins
 | --------------------------- | ------------------------------------------------------------ |
 | `200 OK`                    | Successful read or update.                                   |
 | `201 Created`               | Successful creation.                                         |
+| `204 No Content`            | Successful deletion or state change with no response body.   |
 | `400 Bad Request`           | Invalid input, validation failure, or malformed ID.          |
 | `401 Unauthorized`          | Missing, malformed, invalid, or expired token.               |
 | `403 Forbidden`             | Authenticated user lacks permission or is suspended/banned.  |
