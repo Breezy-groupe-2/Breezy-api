@@ -51,8 +51,8 @@ services:
 
   post-service:
     build:
-      context: ./post-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: post-service/Dockerfile
     environment:
       NODE_ENV: production
       PORT: 3002
