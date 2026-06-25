@@ -31,7 +31,6 @@ services:
       AUTH_SERVICE_PORT: 3001
       PROFILE_SERVICE_PORT: 3007
       AUTH_SERVICE_MONGODB_URI: ${MONGODB_URI:?MONGODB_URI is required}
-      PROFILE_SERVICE_MONGODB_URI: ${PROFILE_SERVICE_MONGODB_URI:?PROFILE_SERVICE_MONGODB_URI is required}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_EXPIRE: ${JWT_EXPIRE:-7d}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
@@ -40,8 +39,6 @@ services:
     depends_on:
       auth-db:
         condition: service_healthy
-      profile-db:
-        condition: service_started
     networks:
       - breezy-network
     restart: unless-stopped
@@ -129,20 +126,6 @@ services:
       - breezy-network
     restart: unless-stopped
 
-  profile-db:
-    image: mongo:latest
-    container_name: breezy-profile-db
-    ports:
-      - '27020:27017'
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?MONGO_ROOT_USER is required}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
-      MONGO_INITDB_DATABASE: breezy_profiles
-    volumes:
-      - profile_db_data:/data/db
-    networks:
-      - breezy-network
-    restart: unless-stopped
 
   swagger-service:
     build:
@@ -193,7 +176,6 @@ services:
 volumes:
   auth_db_data:
   post_follow_comment_db_data:
-  profile_db_data:
   minio_data:
 
 networks:
