@@ -1,0 +1,19 @@
+{
+  "name": "breezy-swagger-service",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Breezy Swagger Documentation Service",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22 <23",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "swagger-ui-express": "^5.0.1"
+  }
+}
