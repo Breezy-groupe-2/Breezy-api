@@ -25,10 +25,13 @@ services:
       dockerfile: auth-profile.Dockerfile
     ports:
       - '3001:3001'
+      - '3007:3007'
     environment:
       NODE_ENV: production
       AUTH_SERVICE_PORT: 3001
+      PROFILE_SERVICE_PORT: 3007
       AUTH_SERVICE_MONGODB_URI: ${MONGODB_URI:?MONGODB_URI is required}
+      PROFILE_SERVICE_MONGODB_URI: ${PROFILE_SERVICE_MONGODB_URI:?PROFILE_SERVICE_MONGODB_URI is required}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
       JWT_EXPIRE: ${JWT_EXPIRE:-7d}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
@@ -36,6 +39,8 @@ services:
     depends_on:
       auth-db:
         condition: service_healthy
+      profile-db:
+        condition: service_started
     networks:
       - breezy-network
     restart: unless-stopped
@@ -119,6 +124,8 @@ services:
         condition: service_healthy
       comment-db:
         condition: service_started
+      follow-db:
+        condition: service_started
     networks:
       - breezy-network
     restart: unless-stopped
@@ -134,6 +141,36 @@ services:
       MONGO_INITDB_DATABASE: breezy_comments
     volumes:
       - comment_db_data:/data/db
+    networks:
+      - breezy-network
+    restart: unless-stopped
+
+  follow-db:
+    image: mongo:latest
+    container_name: breezy-follow-db
+    ports:
+      - '27021:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?MONGO_ROOT_USER is required}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
+      MONGO_INITDB_DATABASE: breezy_follow
+    volumes:
+      - follow_db_data:/data/db
+    networks:
+      - breezy-network
+    restart: unless-stopped
+
+  profile-db:
+    image: mongo:latest
+    container_name: breezy-profile-db
+    ports:
+      - '27020:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:?MONGO_ROOT_USER is required}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?MONGO_ROOT_PASSWORD is required}
+      MONGO_INITDB_DATABASE: breezy_profiles
+    volumes:
+      - profile_db_data:/data/db
     networks:
       - breezy-network
     restart: unless-stopped
@@ -188,6 +225,8 @@ volumes:
   auth_db_data:
   post_db_data:
   comment_db_data:
+  follow_db_data:
+  profile_db_data:
   minio_data:
 
 networks:
