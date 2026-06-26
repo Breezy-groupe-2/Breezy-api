@@ -20,6 +20,7 @@ Required variables:
 - `PORT`: service-specific HTTP port, set by Docker Compose for each container
 - `MONGODB_URI`: MongoDB connection string
 - `JWT_SECRET`: secret used to sign JWTs
+- `JWT_EXPIRES_IN`: access-token lifetime, for example `15m` or `7d`
 
 Set `NODE_ENV=development` explicitly for local development. `NODE_ENV` has no default, so an omitted value stops every service before startup rather than enabling development credentials.
 

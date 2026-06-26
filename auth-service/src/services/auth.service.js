@@ -8,7 +8,7 @@ const { defaultThemePreferences } = require('../config/theme-preferences');
 
 const signToken = (user) =>
   jwt.sign({ sub: user._id, role: user.role }, env.jwtSecret, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '15m',
+    expiresIn: env.jwtExpiresIn,
   });
 
 const normalizePreferences = (preferences) => ({

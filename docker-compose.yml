@@ -32,7 +32,7 @@ services:
       PROFILE_SERVICE_PORT: 3007
       AUTH_SERVICE_MONGODB_URI: ${MONGODB_URI:?MONGODB_URI is required}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
-      JWT_EXPIRE: ${JWT_EXPIRE:-7d}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       AUTH_SERVICE_URL: http://localhost:3001
       POST_SERVICE_URL: http://post-service:3002

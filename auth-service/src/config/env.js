@@ -3,11 +3,17 @@ require('dotenv').config();
 const { z } = require('zod');
 
 const placeholderPattern = /(?:change.*production|change[-_ ]?me|placeholder|example)/i;
+const optionalNonEmptyString = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z.string().trim().min(1).optional()
+);
 
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']),
   PORT: z.coerce.number().int().positive().max(65535).default(3001),
   JWT_SECRET: z.string().optional(),
+  JWT_EXPIRES_IN: optionalNonEmptyString,
+  JWT_EXPIRE: optionalNonEmptyString,
   MONGODB_URI: z.string().optional(),
   POST_SERVICE_URL: z.string().url().optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),
@@ -22,6 +28,7 @@ const parseEnv = (source) => {
 
   const production = result.data.NODE_ENV === 'production';
   const jwtSecret = result.data.JWT_SECRET || (production ? '' : 'test_secret');
+  const jwtExpiresIn = result.data.JWT_EXPIRES_IN || result.data.JWT_EXPIRE || '15m';
   const mongodbUri =
     result.data.MONGODB_URI || (production ? '' : 'mongodb://localhost/breezy_auth');
   const postServiceUrl =
@@ -45,6 +52,7 @@ const parseEnv = (source) => {
     nodeEnv: result.data.NODE_ENV,
     port: result.data.PORT,
     jwtSecret,
+    jwtExpiresIn,
     mongodbUri,
     postServiceUrl,
     googleClientId: result.data.GOOGLE_CLIENT_ID || '',

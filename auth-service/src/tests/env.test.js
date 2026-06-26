@@ -22,6 +22,41 @@ describe('environment configuration', () => {
     expect(Object.isFrozen(config)).toBe(true);
   });
 
+  it('uses JWT_EXPIRES_IN as the canonical token expiry setting', () => {
+    const config = parseEnv({
+      NODE_ENV: 'test',
+      JWT_EXPIRES_IN: '30m',
+      JWT_EXPIRE: '7d',
+    });
+
+    expect(config.jwtExpiresIn).toBe('30m');
+  });
+
+  it('keeps JWT_EXPIRE as a backward-compatible token expiry alias', () => {
+    const config = parseEnv({
+      NODE_ENV: 'test',
+      JWT_EXPIRE: '7d',
+    });
+
+    expect(config.jwtExpiresIn).toBe('7d');
+  });
+
+  it('defaults token expiry when no expiry env var is provided', () => {
+    const config = parseEnv({ NODE_ENV: 'test' });
+
+    expect(config.jwtExpiresIn).toBe('15m');
+  });
+
+  it('treats blank token expiry env vars as unset', () => {
+    const config = parseEnv({
+      NODE_ENV: 'test',
+      JWT_EXPIRES_IN: '',
+      JWT_EXPIRE: '',
+    });
+
+    expect(config.jwtExpiresIn).toBe('15m');
+  });
+
   it('rejects a missing NODE_ENV instead of assuming development', () => {
     expect(() => parseEnv({ PORT: '4100' })).toThrow(/NODE_ENV/);
   });
