@@ -15,6 +15,11 @@ module.exports = defineConfig({
     env: {
       NODE_ENV: 'test',
       JWT_SECRET: 'test_secret',
+      S3_ENDPOINT: 'http://localhost:9000',
+      S3_ACCESS_KEY_ID: 'test-minio-access-key',
+      S3_SECRET_ACCESS_KEY: 'test-minio-secret-key',
+      S3_BUCKET_NAME: 'breezy-media-test',
+      S3_PUBLIC_URL: 'http://localhost:3000/breezy-media-test',
     },
   },
 });

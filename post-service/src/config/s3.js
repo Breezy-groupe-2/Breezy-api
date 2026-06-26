@@ -1,11 +1,12 @@
 const { S3Client } = require('@aws-sdk/client-s3');
+const { env } = require('./env');
 
 const s3Client = new S3Client({
-  endpoint: process.env.S3_ENDPOINT || 'http://localhost:9000',
+  endpoint: env.s3.endpoint,
   region: 'us-east-1', // Required by the SDK, but ignored by local MinIO
   credentials: {
-    accessKeyId: process.env.S3_ACCESS_KEY_ID || 'breezy_minio_user',
-    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || 'breezy_minio_password',
+    accessKeyId: env.s3.accessKeyId,
+    secretAccessKey: env.s3.secretAccessKey,
   },
   forcePathStyle: true, // Required for local MinIO / path-style storage
 });

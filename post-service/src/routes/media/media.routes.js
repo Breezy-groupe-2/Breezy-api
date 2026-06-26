@@ -4,6 +4,7 @@ const { PutObjectCommand } = require('@aws-sdk/client-s3');
 const crypto = require('crypto');
 const path = require('path');
 const s3Client = require('../../config/s3');
+const { env } = require('../../config/env');
 const { authenticate } = require('../../middlewares/authenticate');
 
 const router = Router();
@@ -87,11 +88,8 @@ router.post(
       const fileExt = path.extname(file.originalname) || '.jpg';
       const uniqueFilename = `${crypto.randomUUID()}${fileExt}`;
 
-      const bucketName = process.env.S3_BUCKET_NAME || 'breezy-media';
-      const publicUrlBase = process.env.S3_PUBLIC_URL || 'http://localhost:3000/breezy-media';
-
       const uploadParams = {
-        Bucket: bucketName,
+        Bucket: env.s3.bucketName,
         Key: uniqueFilename,
         Body: file.buffer,
         ContentType: file.mimetype,
@@ -99,7 +97,7 @@ router.post(
 
       await s3Client.send(new PutObjectCommand(uploadParams));
 
-      const fileUrl = `${publicUrlBase}/${uniqueFilename}`;
+      const fileUrl = `${env.s3.publicUrl}/${uniqueFilename}`;
       res.status(200).json({ url: fileUrl });
     } catch (err) {
       next(err);
