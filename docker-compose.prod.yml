@@ -44,6 +44,9 @@ services:
       dockerfile: Dockerfile
     ports:
       - '${API_GATEWAY_PORT:-3000}:3000'
+    environment:
+      NGINX_ENVSUBST_OUTPUT_DIR: /etc/nginx
+      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:?CORS_ALLOWED_ORIGIN is required}
     depends_on:
       - auth-profile-service
       - post-service

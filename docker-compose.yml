@@ -47,8 +47,11 @@ services:
     image: nginx:alpine
     ports:
       - '${API_GATEWAY_PORT:-3000}:3000'
+    environment:
+      NGINX_ENVSUBST_OUTPUT_DIR: /etc/nginx
+      CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN:-*}
     volumes:
-      - ./api-gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./api-gateway/nginx.conf:/etc/nginx/templates/nginx.conf.template:ro
     depends_on:
       - auth-profile-service
       - post-service

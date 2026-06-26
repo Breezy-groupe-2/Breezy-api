@@ -55,6 +55,8 @@ docker compose up --build
 
 Open the API through the gateway at `http://localhost:3000`. Run `docker compose config --quiet` to validate the topology without starting containers.
 
+The gateway owns browser CORS responses for proxied API routes. Local Compose defaults `CORS_ALLOWED_ORIGIN` to `*`; set it to the exact front-end origin for deployed environments.
+
 The gateway smoke script exercises representative routes through Nginx. It keeps the canonical Compose default at port `3000`, but the smoke run maps the gateway to an alternate host port with `API_GATEWAY_PORT` when local port `3000` is already occupied.
 
 ```bash

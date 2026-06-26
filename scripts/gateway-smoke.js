@@ -213,6 +213,26 @@ const registerAndLogin = async (suffix, runId) => {
 
 const runHttpSmoke = async () => {
   await waitForGateway();
+  const expectedCorsOrigin = process.env.CORS_ALLOWED_ORIGIN || '*';
+  const corsPreflight = await recordRoute(
+    'auth register CORS preflight',
+    'OPTIONS',
+    '/api/v1/auth/register',
+    {
+      headers: {
+        Origin: 'http://localhost:3000',
+        'Access-Control-Request-Method': 'POST',
+        'Access-Control-Request-Headers': 'Authorization, Content-Type',
+      },
+    },
+    ({ status, headers, error }) =>
+      !error &&
+      status === 204 &&
+      headers?.get('access-control-allow-origin') === expectedCorsOrigin &&
+      headers?.get('access-control-allow-methods')?.includes('POST'),
+  );
+  assertRoute(corsPreflight, 'Auth register CORS preflight failed');
+
   const runId = `${Date.now()}_${process.pid}`;
   const author = await retryStep('auth-service readiness', () => registerAndLogin('author', runId));
   const reader = await registerAndLogin('reader', runId);
