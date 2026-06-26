@@ -7,84 +7,163 @@ function isDocker() {
   if (process.platform === 'win32') return false;
   try {
     return fs.readFileSync('/proc/1/cgroup', 'utf8').includes('docker');
-  } catch (err) {
+  } catch {
     try {
       return fs.existsSync('/.dockerenv');
-    } catch (e) {
+    } catch {
       return false;
     }
   }
 }
 
-const userSchema = new mongoose.Schema({
-  username: { type: String, required: true, unique: true },
-  email: { type: String, required: true, unique: true },
-  displayName: { type: String },
-  bio: { type: String, maxlength: 160, default: '' },
-  passwordHash: { type: String, required: true },
-  role: { type: String, enum: ['user', 'moderator', 'admin'], default: 'user' },
-  isActive: { type: Boolean, default: true },
-  moderationStatus: { type: String, enum: ['active', 'suspended', 'banned'], default: 'active' },
-  following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
-}, { timestamps: true });
+const userSchema = new mongoose.Schema(
+  {
+    username: { type: String, required: true, unique: true, trim: true, minlength: 3, maxlength: 50 },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    displayName: { type: String, trim: true, maxlength: 50 },
+    bio: { type: String, maxlength: 160, default: '' },
+    avatarUrl: { type: String, default: '' },
+    bannerUrl: { type: String, default: '' },
+    passwordHash: { type: String, required: true },
+    role: { type: String, enum: ['user', 'moderator', 'admin'], default: 'user' },
+    isActive: { type: Boolean, default: true },
+    moderationStatus: { type: String, enum: ['active', 'suspended', 'banned'], default: 'active' },
+    bannedUntil: { type: Date, default: null },
+    moderationHistory: [
+      {
+        action: { type: String, enum: ['suspend', 'ban', 'unban'], required: true },
+        reason: { type: String, required: true },
+        durationHours: { type: Number },
+        bannedUntil: { type: Date },
+        moderatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        createdAt: { type: Date, default: Date.now }
+      }
+    ],
+    preferences: {
+      theme: {
+        mode: { type: String, enum: ['light', 'dark'], default: 'dark' },
+        accentColor: { type: String, match: /^#[0-9A-Fa-f]{6}$/, default: '#1d9bf0' },
+        _id: false
+      },
+      _id: false
+    },
+    following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+  },
+  { timestamps: true }
+);
 
 // follow-service keeps its own user snapshots + follow edges in a separate DB.
-const followUserSnapshotSchema = new mongoose.Schema({
-  username: { type: String, required: true },
-  email: { type: String },
-  passwordHash: { type: String },
-  isActive: { type: Boolean, default: true }
-}, { timestamps: true });
-
-const followSchema = new mongoose.Schema({
-  follower: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  following: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
-}, { timestamps: true });
-
-const postSchema = new mongoose.Schema({
-  content: { type: String, required: true, maxlength: 280 },
-  author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
-}, { timestamps: true });
-
-const likeSchema = new mongoose.Schema({
-  post: { type: mongoose.Schema.Types.ObjectId, ref: 'Post', required: true },
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
-}, { timestamps: true });
-
-const commentSchema = new mongoose.Schema({
-  content: { type: String, required: true, maxlength: 280 },
-  postId: { type: String, required: true },
-  author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
-}, { timestamps: true });
-
-const replySchema = new mongoose.Schema({
-  content: { type: String, required: true, maxlength: 280 },
-  commentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Comment', required: true },
-  author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
-}, { timestamps: true });
-
-const reportSchema = new mongoose.Schema({
-  kind: { type: String, enum: ['post', 'comment'], required: true },
-  reason: {
-    type: String,
-    enum: ['Spam', 'Harcèlement', 'Contenu inapproprié', 'Désinformation'],
-    required: true
+const followUserSnapshotSchema = new mongoose.Schema(
+  {
+    username: { type: String, required: true, unique: true, trim: true, minlength: 3, maxlength: 50 },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    displayName: { type: String, trim: true },
+    avatarUrl: { type: String, default: '' },
+    passwordHash: { type: String, required: true },
+    role: { type: String, enum: ['user', 'moderator', 'admin'], default: 'user' },
+    isActive: { type: Boolean, default: true },
+    following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
   },
-  author: {
-    username: { type: String, required: true },
-    displayName: { type: String, required: true },
-    avatarUrl: { type: String },
-    _id: false
+  { timestamps: true }
+);
+
+const followSchema = new mongoose.Schema(
+  {
+    follower: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    following: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
   },
-  onPostAuthor: {
-    username: { type: String },
-    displayName: { type: String },
-    _id: false
+  { timestamps: true }
+);
+
+followSchema.index({ follower: 1, following: 1 }, { unique: true });
+followSchema.index({ following: 1 });
+
+const postSchema = new mongoose.Schema(
+  {
+    content: { type: String, default: '', maxlength: 280, trim: true },
+    author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    mediaUrl: { type: String, trim: true, default: null },
+    repostOf: { type: mongoose.Schema.Types.ObjectId, ref: 'Post', default: null }
   },
-  count: { type: Number, default: 1 },
-  text: { type: String, default: '' },
-  status: { type: String, enum: ['pending', 'dismissed', 'actioned'], default: 'pending' }
-}, { timestamps: true });
+  { timestamps: true }
+);
+
+postSchema.index(
+  { author: 1, repostOf: 1 },
+  { unique: true, partialFilterExpression: { repostOf: { $type: 'objectId' }, content: '' } }
+);
+
+const likeSchema = new mongoose.Schema(
+  {
+    post: { type: mongoose.Schema.Types.ObjectId, ref: 'Post', required: true },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
+  },
+  { timestamps: true }
+);
+
+likeSchema.index({ post: 1, user: 1 }, { unique: true });
+
+const commentSchema = new mongoose.Schema(
+  {
+    content: { type: String, required: true, maxlength: 280, trim: true },
+    postId: { type: String, required: true },
+    author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
+  },
+  { timestamps: true }
+);
+
+commentSchema.index({ postId: 1, createdAt: -1 });
+
+const replySchema = new mongoose.Schema(
+  {
+    content: { type: String, required: true, maxlength: 280, trim: true },
+    commentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Comment', required: true },
+    author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
+  },
+  { timestamps: true }
+);
+
+replySchema.index({ commentId: 1, createdAt: -1 });
+
+const reportSchema = new mongoose.Schema(
+  {
+    kind: { type: String, enum: ['post'], required: true },
+    reason: {
+      type: String,
+      enum: ['Spam', 'Harcèlement', 'Contenu inapproprié', 'Désinformation'],
+      required: true
+    },
+    author: {
+      username: { type: String, required: true },
+      displayName: { type: String, required: true },
+      avatarUrl: { type: String },
+      _id: false
+    },
+    postId: { type: mongoose.Schema.Types.ObjectId, ref: 'Post' },
+    onPostAuthor: {
+      type: {
+        username: { type: String, required: true },
+        displayName: { type: String, required: true },
+        _id: false
+      },
+      default: undefined
+    },
+    reporter: {
+      type: {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        username: { type: String, required: true },
+        displayName: { type: String, required: true },
+        avatarUrl: { type: String },
+        _id: false
+      },
+      required: true
+    },
+    count: { type: Number, default: 1, min: 1 },
+    text: { type: String, default: '' },
+    status: { type: String, enum: ['pending', 'dismissed', 'actioned'], default: 'pending' }
+  },
+  { timestamps: true }
+);
 
 async function getConnectionString(uri) {
   if (!uri) return null;
@@ -94,8 +173,14 @@ async function getConnectionString(uri) {
   const hostAndPort = match[1];
   const [host] = hostAndPort.split(':');
   
-  if (isDocker()) {
-    return uri; // inside docker, hostnames resolve perfectly
+  // Production Mode: Skip localhost translation for Docker environments
+  // when explicitly running seed script inside containers
+  if (process.env.SEED_DOCKER_MODE === 'true' || isDocker()) {
+    // In production containers, connect directly to MongoDB service hostnames
+    // (e.g., auth-db, post-follow-comment-db, profile-db) - these resolve via Docker network
+    // The getConnectionString function should NOT translate hostname to localhost
+    // in production mode, as container hostnames resolve perfectly in Docker network
+    return uri;
   } else {
     // on host, translate to localhost with exposed database ports
     let localPort = '27017';
@@ -152,6 +237,12 @@ async function seed() {
   const eveId = new mongoose.Types.ObjectId();
 
   const passwordHash = bcrypt.hashSync('password123', 12);
+  const reporter = (userId, username, displayName = username) => ({
+    userId,
+    username,
+    displayName,
+    avatarUrl: ''
+  });
 
   // 4. Seed Users
   console.log('Seeding Users...');
@@ -231,7 +322,7 @@ async function seed() {
     content: 'Welcome to Breezy, the ultimate lightweight social network! 🚀 Keep it short and #breezy.',
     author: aliceId
   });
-  const post2 = await Post.create({
+  await Post.create({
     content: 'As an administrator, please be mindful of other users. Check the swagger docs at /api-docs! #breezy #webdev',
     author: aliceId
   });
@@ -306,15 +397,17 @@ async function seed() {
       reason: 'Spam',
       author: { username: 'eve', displayName: 'Eve', avatarUrl: '' },
       postId: post5._id,
+      reporter: reporter(aliceId, 'alice', 'Alice'),
       count: 4,
       text: 'GAGNE 500€/JOUR depuis chez toi 💸💸 clique sur mon lien en bio, places limitées !!!'
     },
     {
-      kind: 'comment',
+      kind: 'post',
       reason: 'Harcèlement',
       author: { username: 'david', displayName: 'David', avatarUrl: '' },
       postId: post6._id,
       onPostAuthor: { username: 'charlie', displayName: 'Charlie' },
+      reporter: reporter(charlieId, 'charlie', 'Charlie'),
       count: 7,
       text: "franchement t'es nul, arrête de poster, personne te lit de toute façon."
     },
@@ -323,6 +416,7 @@ async function seed() {
       reason: 'Désinformation',
       author: { username: 'bob', displayName: 'Bob', avatarUrl: '' },
       postId: post7._id,
+      reporter: reporter(davidId, 'david', 'David'),
       count: 3,
       text: "source : « mon cousin l'a dit ». donc c'est forcément vrai, arrêtez de vérifier."
     }
@@ -334,19 +428,23 @@ async function seed() {
   console.log('Seeding follow-service snapshots and edges...');
   await FollowUser.deleteMany({});
   await FollowEdge.deleteMany({});
-  const snapshot = (id, username, isActive = true) => ({
+  const snapshot = (id, username, displayName, isActive = true) => ({
     _id: id,
     username,
     email: `${id}@internal.breezy.local`,
+    displayName,
+    avatarUrl: '',
     passwordHash: 'external-auth-user',
-    isActive
+    role: 'user',
+    isActive,
+    following: []
   });
   await FollowUser.create([
-    snapshot(aliceId, 'alice'),
-    snapshot(bobId, 'bob'),
-    snapshot(charlieId, 'charlie'),
-    snapshot(davidId, 'david'),
-    snapshot(eveId, 'eve', false)
+    snapshot(aliceId, 'alice', 'Alice'),
+    snapshot(bobId, 'bob', 'Bob'),
+    snapshot(charlieId, 'charlie', 'Charlie'),
+    snapshot(davidId, 'david', 'David'),
+    snapshot(eveId, 'eve', 'Eve', false)
   ]);
   await FollowEdge.create([
     { follower: bobId, following: aliceId },

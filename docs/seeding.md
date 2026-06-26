@@ -38,7 +38,7 @@ npm run seed
 This script will:
 1. Connect to the databases using the exposed host ports (`27017` and `27018`).
 2. Clear any old data in all databases.
-3. Inject the mock accounts, follows, posts, likes, comments, and comment replies.
+3. Inject the mock accounts, follows, posts, likes, comments, comment replies, and moderation reports.
 
 ---
 
