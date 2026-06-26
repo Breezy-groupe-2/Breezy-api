@@ -6,6 +6,7 @@ const productionConfig = {
   JWT_SECRET: 's'.repeat(48),
   MONGODB_URI: 'mongodb://service-user:strong-local-pass@database:27017/service',
   POST_SERVICE_URL: 'http://post-service:3002',
+  INTERNAL_SERVICE_TOKEN: 'i'.repeat(48),
 };
 
 describe('environment configuration', () => {
@@ -32,6 +33,9 @@ describe('environment configuration', () => {
     expect(() => parseEnv({ ...productionConfig, POST_SERVICE_URL: undefined })).toThrow(
       /POST_SERVICE_URL/
     );
+    expect(() => parseEnv({ ...productionConfig, INTERNAL_SERVICE_TOKEN: undefined })).toThrow(
+      /INTERNAL_SERVICE_TOKEN/
+    );
   });
 
   it('rejects placeholder credentials', () => {
@@ -40,8 +44,9 @@ describe('environment configuration', () => {
         ...productionConfig,
         JWT_SECRET: 'change-me-before-production',
         MONGODB_URI: 'mongodb://placeholder.invalid/service',
+        INTERNAL_SERVICE_TOKEN: 'change-me-before-production',
       })
-    ).toThrow(/JWT_SECRET, MONGODB_URI/);
+    ).toThrow(/JWT_SECRET, MONGODB_URI, INTERNAL_SERVICE_TOKEN/);
   });
 
   it('does not echo credential values in validation errors', () => {

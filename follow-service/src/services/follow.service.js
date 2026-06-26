@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { env } = require('../config/env');
 const Follow = require('../models/follow.model');
 const User = require('../models/user.model');
 
@@ -11,6 +12,9 @@ const syncAuthFollowing = async (method, followerId, followingId) => {
   try {
     await fetch(`${authServiceUrl()}/internal/users/${followerId}/following/${followingId}`, {
       method,
+      headers: {
+        'x-internal-service-token': env.internalServiceToken,
+      },
     });
   } catch {
     /* ignore: counts will reconcile on the next successful sync */

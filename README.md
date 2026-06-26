@@ -20,6 +20,7 @@ Required variables:
 - `PORT`: service-specific HTTP port, set by Docker Compose for each container
 - `MONGODB_URI`: MongoDB connection string
 - `JWT_SECRET`: secret used to sign JWTs
+- `INTERNAL_SERVICE_TOKEN`: shared service-to-service token for protected internal sync routes
 
 Set `NODE_ENV=development` explicitly for local development. `NODE_ENV` has no default, so an omitted value stops every service before startup rather than enabling development credentials.
 
@@ -39,7 +40,7 @@ Set `MONGO_ROOT_USER`, `MONGO_ROOT_PASSWORD`, and `JWT_SECRET` in `.env`. Build 
 - `FOLLOW_SERVICE_MONGODB_URI` for follow-service
 - `FEED_SERVICE_MONGODB_URI` for feed-service
 
-Each service validates `NODE_ENV`, `PORT`, `JWT_SECRET`, and its database URI before startup. Production startup fails when credentials are absent, too short, malformed, or recognizable placeholders.
+Each service validates `NODE_ENV`, `PORT`, `JWT_SECRET`, service-to-service credentials, and its database URI before startup. Production startup fails when credentials are absent, too short, malformed, or recognizable placeholders.
 
 > Security notice: if any environment ever used repository-provided JWT or Mongo administrative defaults, rotate both credentials in that environment immediately and invalidate all outstanding access tokens. Removing defaults from Git does not rotate deployed credentials.
 

@@ -10,6 +10,7 @@ const schema = z.object({
   JWT_SECRET: z.string().optional(),
   MONGODB_URI: z.string().optional(),
   POST_SERVICE_URL: z.string().url().optional(),
+  INTERNAL_SERVICE_TOKEN: z.string().optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),
 });
 
@@ -26,6 +27,8 @@ const parseEnv = (source) => {
     result.data.MONGODB_URI || (production ? '' : 'mongodb://localhost/breezy_auth');
   const postServiceUrl =
     result.data.POST_SERVICE_URL || (production ? '' : 'http://post-service:3002');
+  const internalServiceToken =
+    result.data.INTERNAL_SERVICE_TOKEN || (production ? '' : 'test_internal_service_token');
   const invalid = [];
 
   if ((production && jwtSecret.length < 32) || placeholderPattern.test(jwtSecret)) {
@@ -37,6 +40,12 @@ const parseEnv = (source) => {
   if (!postServiceUrl || placeholderPattern.test(postServiceUrl)) {
     invalid.push('POST_SERVICE_URL');
   }
+  if (
+    (production && internalServiceToken.length < 32) ||
+    placeholderPattern.test(internalServiceToken)
+  ) {
+    invalid.push('INTERNAL_SERVICE_TOKEN');
+  }
   if (invalid.length) {
     throw new Error(`Invalid environment configuration: ${invalid.join(', ')}`);
   }
@@ -47,6 +56,7 @@ const parseEnv = (source) => {
     jwtSecret,
     mongodbUri,
     postServiceUrl,
+    internalServiceToken,
     googleClientId: result.data.GOOGLE_CLIENT_ID || '',
   });
 };

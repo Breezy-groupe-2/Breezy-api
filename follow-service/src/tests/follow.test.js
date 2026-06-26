@@ -61,6 +61,15 @@ beforeEach(async () => {
 
 describe('follow routes', () => {
   it('follows another user and maintains User.following without duplicates', async () => {
+    const fetchCalls = [];
+    global.fetch = async (url, options = {}) => {
+      fetchCalls.push({ url: url.toString(), options });
+      if (url.toString().endsWith('/api/v1/users/me')) {
+        return { ok: true, status: 200, json: async () => ({}) };
+      }
+      return { ok: false, status: 404, json: async () => ({ error: 'User not found' }) };
+    };
+
     const first = await request(app)
       .post(`/api/v1/users/${userB._id}/follow`)
       .set('Authorization', `Bearer ${tokenA}`);
@@ -72,6 +81,15 @@ describe('follow routes', () => {
       followerId: userA._id.toString(),
       followingId: userB._id.toString(),
     });
+    expect(fetchCalls).toContainEqual(
+      expect.objectContaining({
+        url: expect.stringContaining(`/internal/users/${userA._id}/following/${userB._id}`),
+        options: expect.objectContaining({
+          method: 'PUT',
+          headers: { 'x-internal-service-token': 'test_internal_service_token' },
+        }),
+      })
+    );
     expect(followCount).toBe(1);
     expect(storedUser.following.map((id) => id.toString())).toEqual([userB._id.toString()]);
   });

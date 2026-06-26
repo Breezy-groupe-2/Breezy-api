@@ -658,6 +658,6 @@ The Nginx gateway maps public paths to internal services:
 | `/api/v1/feed`                                         | comment-feed-follow-service | 3004 |
 | `/api-docs`                                            | swagger-service             | 3005 |
 
-> **Risk note:** `/internal/users/:id` is an unauthenticated service-to-service endpoint exposed only inside the Docker network. Do not publish port 3001 to untrusted networks.
+> **Risk note:** `/internal/users/:id` is a read-only service-to-service endpoint exposed only inside the Docker network. Follow sync mutation routes require the shared `INTERNAL_SERVICE_TOKEN`. Do not publish port 3001 to untrusted networks.
 
 See [`api-gateway/nginx.conf`](../api-gateway/nginx.conf) and [`docker-compose.yml`](../docker-compose.yml) for the full routing configuration.

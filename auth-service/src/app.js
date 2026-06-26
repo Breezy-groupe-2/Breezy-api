@@ -17,6 +17,7 @@ const {
 } = require('./controllers/auth.controller');
 const { authenticate } = require('./middlewares/authenticate');
 const { checkActive } = require('./middlewares/checkActive');
+const { requireInternalServiceToken } = require('./middlewares/requireInternalServiceToken');
 const {
   validate,
   updatePreferencesSchema,
@@ -37,8 +38,16 @@ app.get('/internal/users', internalUsersByIds);
 app.get('/internal/users/by-username/:username', internalUserByUsername);
 app.get('/internal/users/:id', internalUserSummary);
 // follow-service keeps the follow graph in sync here (service-to-service only).
-app.put('/internal/users/:followerId/following/:followingId', syncFollowing);
-app.delete('/internal/users/:followerId/following/:followingId', syncUnfollowing);
+app.put(
+  '/internal/users/:followerId/following/:followingId',
+  requireInternalServiceToken,
+  syncFollowing
+);
+app.delete(
+  '/internal/users/:followerId/following/:followingId',
+  requireInternalServiceToken,
+  syncUnfollowing
+);
 app.get('/api/v1/users/me', authenticate, checkActive, me);
 app.put(
   '/api/v1/users/me',

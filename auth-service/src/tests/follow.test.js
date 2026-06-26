@@ -41,6 +41,32 @@ beforeEach(async () => {
 });
 
 describe('auth-service follow route ownership', () => {
+  it('requires the internal service token for follow sync mutations', async () => {
+    const missing = await request(app).put(`/internal/users/${userAId}/following/${userBId}`);
+    const invalid = await request(app)
+      .delete(`/internal/users/${userAId}/following/${userBId}`)
+      .set('x-internal-service-token', 'wrong-token');
+
+    expect(missing.status).toBe(401);
+    expect(invalid.status).toBe(401);
+  });
+
+  it('allows follow sync mutations with the internal service token', async () => {
+    const create = await request(app)
+      .put(`/internal/users/${userAId}/following/${userBId}`)
+      .set('x-internal-service-token', 'test_internal_service_token');
+    const afterCreate = await User.findById(userAId);
+    const remove = await request(app)
+      .delete(`/internal/users/${userAId}/following/${userBId}`)
+      .set('x-internal-service-token', 'test_internal_service_token');
+    const afterRemove = await User.findById(userAId);
+
+    expect(create.status).toBe(204);
+    expect(afterCreate.following.map((id) => id.toString())).toContain(userBId);
+    expect(remove.status).toBe(204);
+    expect(afterRemove.following.map((id) => id.toString())).not.toContain(userBId);
+  });
+
   it('does not expose relationship routes under auth paths', async () => {
     const create = await request(app)
       .post(`/api/v1/auth/${userBId}/follow`)
