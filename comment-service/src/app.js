@@ -1,4 +1,5 @@
 const express = require('express');
+const { errorHandler } = require('./shared/error-handler');
 
 const { setupSwagger } = require('./config/swagger');
 
@@ -29,8 +30,6 @@ app.delete('/api/v1/comments/:id/like', authenticate, unlikeComment);
 app.use('/api/v1/posts/:postId/comments', commentRoutes);
 app.use('/api/v1/comments/:commentId/replies', replyRoutes);
 
-app.use((err, _req, res, _next) => {
-  res.status(err.status ?? 500).json({ error: err.message ?? 'Internal server error' });
-});
+app.use(errorHandler);
 
 module.exports = app;

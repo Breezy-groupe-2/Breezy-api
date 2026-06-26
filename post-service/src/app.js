@@ -1,6 +1,7 @@
 const express = require('express');
 const postRoutes = require('./routes/post/post.routes');
 const mediaRoutes = require('./routes/media/media.routes');
+const { errorHandler } = require('./shared/error-handler');
 
 const { setupSwagger } = require('./config/swagger');
 
@@ -18,9 +19,6 @@ app.get('/health', (req, res) => {
 app.use('/api/v1/posts', postRoutes);
 app.use('/api/v1/media', mediaRoutes);
 
-app.use((err, _req, res, _next) => {
-  console.error(err);
-  res.status(err.status ?? 500).json({ error: err.message ?? 'Internal server error' });
-});
+app.use(errorHandler);
 
 module.exports = app;

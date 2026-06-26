@@ -1,5 +1,6 @@
 const express = require('express');
 const followRoutes = require('./routes/follow.routes');
+const { errorHandler } = require('./shared/error-handler');
 
 const { setupSwagger } = require('./config/swagger');
 
@@ -16,8 +17,6 @@ app.get('/health', (req, res) => {
 
 app.use('/api/v1/users/:id', followRoutes);
 
-app.use((err, _req, res, _next) => {
-  res.status(err.status ?? 500).json({ error: err.message ?? 'Internal server error' });
-});
+app.use(errorHandler);
 
 module.exports = app;

@@ -1,5 +1,6 @@
 const express = require('express');
 const feedRoutes = require('./routes/feed.routes');
+const { errorHandler } = require('./shared/error-handler');
 
 const { setupSwagger } = require('./config/swagger');
 
@@ -16,9 +17,6 @@ app.get('/health', (req, res) => {
 
 app.use('/api/v1/feed', feedRoutes);
 
-app.use((err, _req, res, _next) => {
-  console.error(err);
-  res.status(err.status ?? 500).json({ error: err.message ?? 'Internal server error' });
-});
+app.use(errorHandler);
 
 module.exports = app;

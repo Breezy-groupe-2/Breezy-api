@@ -22,6 +22,7 @@ const {
   updatePreferencesSchema,
   updateProfileSchema,
 } = require('./middlewares/validate');
+const { errorHandler } = require('./shared/error-handler');
 
 const { setupSwagger } = require('./config/swagger');
 
@@ -63,9 +64,6 @@ app.get('/api/v1/users/:id', getPublicUser);
 app.use('/api/v1/users', moderationRoutes);
 app.use('/api/v1/moderation', adminModerationRoutes);
 
-app.use((err, _req, res, _next) => {
-  console.error(err);
-  res.status(err.status ?? 500).json({ error: err.message ?? 'Internal server error' });
-});
+app.use(errorHandler);
 
 module.exports = app;

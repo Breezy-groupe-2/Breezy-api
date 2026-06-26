@@ -147,7 +147,7 @@ describe('GET /api/v1/feed', () => {
       const res = await request(app).get('/api/v1/feed').set('Authorization', `Bearer ${tokenA}`);
 
       expect(res.status).toBe(502);
-      expect(res.body).toEqual({ error: 'Upstream service request failed: 502' });
+      expect(res.body).toEqual({ error: 'Internal server error' });
     } finally {
       global.fetch = originalFetch;
     }
