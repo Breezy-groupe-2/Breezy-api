@@ -1,7 +1,11 @@
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
 const request = require('supertest');
-const { app, models, mongoose: authMongoose } = require('../../../auth-service/src/tests/helpers/api-test-utils');
+const {
+  app,
+  models,
+  mongoose: authMongoose,
+} = require('../../../auth-service/src/tests/helpers/api-test-utils');
 
 const { Post, User } = models;
 
@@ -117,8 +121,16 @@ describe('GET /api/v1/posts?authorIds=<ids>&limit=<n>', () => {
     await Post.create([
       { content: 'old author A', author: authorA, createdAt: new Date('2026-01-01T00:00:00.000Z') },
       { content: 'new author B', author: authorB, createdAt: new Date('2026-01-03T00:00:00.000Z') },
-      { content: 'middle author A', author: authorA, createdAt: new Date('2026-01-02T00:00:00.000Z') },
-      { content: 'outsider post', author: outsider, createdAt: new Date('2026-01-04T00:00:00.000Z') },
+      {
+        content: 'middle author A',
+        author: authorA,
+        createdAt: new Date('2026-01-02T00:00:00.000Z'),
+      },
+      {
+        content: 'outsider post',
+        author: outsider,
+        createdAt: new Date('2026-01-04T00:00:00.000Z'),
+      },
     ]);
 
     const res = await request(app).get(`/api/v1/posts?authorIds=${authorA},${authorB}&limit=10`);
@@ -130,9 +142,7 @@ describe('GET /api/v1/posts?authorIds=<ids>&limit=<n>', () => {
       'old author A',
     ]);
     expect(
-      res.body.every((post) =>
-        [authorA.toString(), authorB.toString()].includes(post.author.id)
-      )
+      res.body.every((post) => [authorA.toString(), authorB.toString()].includes(post.author.id))
     ).toBe(true);
     expect(res.body[0]).toHaveProperty('likeCount', 0);
   });
@@ -163,7 +173,9 @@ describe('GET /api/v1/posts?authorIds=<ids>&limit=<n>', () => {
     ]);
 
     const limitOneRes = await request(app).get(`/api/v1/posts?authorIds=${author}&limit=1`);
-    const limitOneHundredRes = await request(app).get(`/api/v1/posts?authorIds=${author}&limit=100`);
+    const limitOneHundredRes = await request(app).get(
+      `/api/v1/posts?authorIds=${author}&limit=100`
+    );
 
     expect(limitOneRes.status).toBe(200);
     expect(limitOneRes.body.map((post) => post.content)).toEqual(['newer']);

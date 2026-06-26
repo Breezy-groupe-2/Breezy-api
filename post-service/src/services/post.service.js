@@ -48,7 +48,9 @@ const serializePosts = async (posts, viewerId, { embedOriginals = true } = {}) =
         { $group: { _id: '$repostOf', count: { $sum: 1 } } },
       ]),
       viewerId
-        ? Post.find({ repostOf: { $in: postIds }, author: viewerId, content: '' }).select('repostOf')
+        ? Post.find({ repostOf: { $in: postIds }, author: viewerId, content: '' }).select(
+            'repostOf'
+          )
         : Promise.resolve([]),
       embedOriginals && originalIds.length
         ? Post.find({ _id: { $in: originalIds } })
@@ -81,7 +83,7 @@ const serializePosts = async (posts, viewerId, { embedOriginals = true } = {}) =
       commentsCount: Number(commentCounts.get(id) ?? 0),
       repostCount: repostCountByPost.get(id) ?? 0,
       isReposted: repostedByViewer.has(id),
-      repostOf: post.repostOf ? originalById.get(post.repostOf.toString()) ?? null : null,
+      repostOf: post.repostOf ? (originalById.get(post.repostOf.toString()) ?? null) : null,
     };
   });
 };
@@ -219,7 +221,10 @@ const getLikedPosts = async (idOrUsername, viewerId, limit = 50) => {
     }
   }
 
-  const likes = await Like.find({ user: userId }).sort({ createdAt: -1 }).limit(limit).select('post');
+  const likes = await Like.find({ user: userId })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .select('post');
   const postIds = likes.map((like) => like.post);
   if (postIds.length === 0) return [];
 
@@ -262,7 +267,9 @@ const getPostsByAuthors = async ({ authorIds, limit }, viewerId) => {
     return [];
   }
 
-  const posts = await Post.find({ author: { $in: authorIds } }).sort({ createdAt: -1 }).limit(limit);
+  const posts = await Post.find({ author: { $in: authorIds } })
+    .sort({ createdAt: -1 })
+    .limit(limit);
   return serializePosts(posts, viewerId);
 };
 

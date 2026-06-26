@@ -3,9 +3,7 @@ const mongoose = require('mongoose');
 
 const moderateUser = async ({ userId, status, durationHours, reason, moderatorId }) => {
   // The admin UI targets users by username; accept either a Mongo id or username.
-  const query = mongoose.Types.ObjectId.isValid(userId)
-    ? { _id: userId }
-    : { username: userId };
+  const query = mongoose.Types.ObjectId.isValid(userId) ? { _id: userId } : { username: userId };
 
   const user = await User.findOne(query);
   if (!user) {

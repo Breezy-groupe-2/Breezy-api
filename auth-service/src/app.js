@@ -40,13 +40,7 @@ app.get('/internal/users/:id', internalUserSummary);
 app.put('/internal/users/:followerId/following/:followingId', syncFollowing);
 app.delete('/internal/users/:followerId/following/:followingId', syncUnfollowing);
 app.get('/api/v1/users/me', authenticate, checkActive, me);
-app.put(
-  '/api/v1/users/me',
-  authenticate,
-  checkActive,
-  validate(updateProfileSchema),
-  updateMe
-);
+app.put('/api/v1/users/me', authenticate, checkActive, validate(updateProfileSchema), updateMe);
 app.patch(
   '/api/v1/users/me/preferences',
   authenticate,

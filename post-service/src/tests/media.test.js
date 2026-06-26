@@ -5,7 +5,6 @@ const jwt = require('jsonwebtoken');
 const s3Client = require('../config/s3');
 const app = require('../app');
 
-
 let mongod;
 let token;
 

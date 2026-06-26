@@ -95,9 +95,13 @@ describe('GET /api/v1/feed', () => {
     };
 
     try {
-      const res = await request(app).get('/api/v1/feed?limit=2').set('Authorization', `Bearer ${tokenA}`);
+      const res = await request(app)
+        .get('/api/v1/feed?limit=2')
+        .set('Authorization', `Bearer ${tokenA}`);
       const postFetchUrls = fetchedUrls.filter((url) => url.includes('/api/v1/posts'));
-      const perFolloweePostFetchUrls = postFetchUrls.filter((url) => url.includes('/api/v1/posts/user/'));
+      const perFolloweePostFetchUrls = postFetchUrls.filter((url) =>
+        url.includes('/api/v1/posts/user/')
+      );
 
       expect(res.status).toBe(200);
       expect(res.body).toHaveLength(2);
@@ -125,7 +129,9 @@ describe('GET /api/v1/feed', () => {
       .set('Authorization', `Bearer ${tokenB}`)
       .send({ content: 'Second post' });
 
-    const res = await request(app).get('/api/v1/feed?limit=1').set('Authorization', `Bearer ${tokenA}`);
+    const res = await request(app)
+      .get('/api/v1/feed?limit=1')
+      .set('Authorization', `Bearer ${tokenA}`);
 
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
@@ -170,14 +176,14 @@ describe('GET /api/v1/feed', () => {
     expect(res.status).toBe(401);
   });
 
-  it.each(['not-a-jwt', jwt.sign({ sub: 'expired-user', role: 'user' }, 'test_secret', { expiresIn: '-1s' })])(
-    'returns 401 when token is invalid or expired',
-    async (badToken) => {
-      const res = await request(app).get('/api/v1/feed').set('Authorization', `Bearer ${badToken}`);
+  it.each([
+    'not-a-jwt',
+    jwt.sign({ sub: 'expired-user', role: 'user' }, 'test_secret', { expiresIn: '-1s' }),
+  ])('returns 401 when token is invalid or expired', async (badToken) => {
+    const res = await request(app).get('/api/v1/feed').set('Authorization', `Bearer ${badToken}`);
 
-      expect(res.status).toBe(401);
-    }
-  );
+    expect(res.status).toBe(401);
+  });
 
   it.each([
     ['inactive', { isActive: false }],
@@ -201,7 +207,10 @@ describe('GET /api/v1/feed', () => {
 
   it.each([
     ['network rejection', async () => Promise.reject(new Error('network down'))],
-    ['auth-service 5xx', async () => new Response(JSON.stringify({ error: 'down' }), { status: 503 })],
+    [
+      'auth-service 5xx',
+      async () => new Response(JSON.stringify({ error: 'down' }), { status: 503 }),
+    ],
   ])('returns 502 when auth-service active verification has %s', async (_caseName, fetchImpl) => {
     const originalFetch = global.fetch;
     global.fetch = async (url, options) => {

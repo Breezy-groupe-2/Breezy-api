@@ -2,7 +2,11 @@ const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
-const { app, models, mongoose: authMongoose } = require('../../../auth-service/src/tests/helpers/api-test-utils');
+const {
+  app,
+  models,
+  mongoose: authMongoose,
+} = require('../../../auth-service/src/tests/helpers/api-test-utils');
 
 const { Post, User } = models;
 
@@ -111,9 +115,13 @@ describe('POST /api/v1/posts', () => {
   });
 
   it('returns 401 on expired token', async () => {
-    const expiredToken = jwt.sign({ sub: new mongoose.Types.ObjectId(), role: 'user' }, 'test_secret', {
-      expiresIn: '-1s',
-    });
+    const expiredToken = jwt.sign(
+      { sub: new mongoose.Types.ObjectId(), role: 'user' },
+      'test_secret',
+      {
+        expiresIn: '-1s',
+      }
+    );
 
     const res = await request(app)
       .post('/api/v1/posts')
@@ -124,7 +132,11 @@ describe('POST /api/v1/posts', () => {
   });
 
   it.each([403, 404])('returns %s from auth-service active verification', async (status) => {
-    global.fetch = async () => ({ ok: false, status, json: async () => ({ error: 'auth failed' }) });
+    global.fetch = async () => ({
+      ok: false,
+      status,
+      json: async () => ({ error: 'auth failed' }),
+    });
 
     const res = await request(app)
       .post('/api/v1/posts')
@@ -136,7 +148,10 @@ describe('POST /api/v1/posts', () => {
 
   it.each([
     ['network rejection', async () => Promise.reject(new Error('network down'))],
-    ['auth-service 5xx', async () => ({ ok: false, status: 503, json: async () => ({ error: 'down' }) })],
+    [
+      'auth-service 5xx',
+      async () => ({ ok: false, status: 503, json: async () => ({ error: 'down' }) }),
+    ],
   ])('returns 502 when auth-service active verification has %s', async (_caseName, fetchImpl) => {
     global.fetch = fetchImpl;
 

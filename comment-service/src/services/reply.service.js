@@ -50,7 +50,10 @@ const getReplies = async (commentId, { limit = 50, viewerId } = {}) => {
   const replies = await Reply.find({ commentId }).sort({ createdAt: 1 }).limit(limit);
   const [authors, likes] = await Promise.all([
     fetchAuthorsByIds(replies.map((reply) => reply.author)),
-    getLikeData(replies.map((reply) => reply._id), viewerId),
+    getLikeData(
+      replies.map((reply) => reply._id),
+      viewerId
+    ),
   ]);
   return replies.map((reply) => serializeReply(reply, authors, likes));
 };

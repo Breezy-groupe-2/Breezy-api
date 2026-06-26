@@ -31,12 +31,12 @@ Use meaningful HTTP status codes:
 
 Protected write, self, and feed endpoints require a JWT and active-user verification. Public read endpoints remain public unless an endpoint explicitly documents a stricter requirement.
 
-| Condition | Status |
-| --- | --- |
-| Missing, malformed, invalid, or expired token | `401 Unauthorized` |
-| Authenticated user is inactive, banned, or suspended | `403 Forbidden` |
-| Authenticated user no longer exists in auth-service | `404 Not Found` |
-| Auth-service network failure or upstream 5xx | `502 Bad Gateway` |
+| Condition                                            | Status             |
+| ---------------------------------------------------- | ------------------ |
+| Missing, malformed, invalid, or expired token        | `401 Unauthorized` |
+| Authenticated user is inactive, banned, or suspended | `403 Forbidden`    |
+| Authenticated user no longer exists in auth-service  | `404 Not Found`    |
+| Auth-service network failure or upstream 5xx         | `502 Bad Gateway`  |
 
 ## Validation
 

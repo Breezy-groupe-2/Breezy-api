@@ -113,7 +113,6 @@ services:
       - breezy-network
     restart: unless-stopped
 
-
   swagger-service:
     build:
       context: ./swagger-service

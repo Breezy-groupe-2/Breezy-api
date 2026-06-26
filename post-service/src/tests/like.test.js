@@ -1,7 +1,11 @@
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
 const request = require('supertest');
-const { app, models, mongoose: authMongoose } = require('../../../auth-service/src/tests/helpers/api-test-utils');
+const {
+  app,
+  models,
+  mongoose: authMongoose,
+} = require('../../../auth-service/src/tests/helpers/api-test-utils');
 
 const { Like, Post, User } = models;
 

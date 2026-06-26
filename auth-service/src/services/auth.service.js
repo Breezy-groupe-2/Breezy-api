@@ -256,7 +256,9 @@ const getInternalUserSummary = async (userId) => {
     err.status = 404;
     throw err;
   }
-  const user = await User.findById(userId).select('username displayName avatarUrl bannerUrl isActive');
+  const user = await User.findById(userId).select(
+    'username displayName avatarUrl bannerUrl isActive'
+  );
   if (!user) {
     const err = new Error('User not found');
     err.status = 404;
@@ -266,7 +268,9 @@ const getInternalUserSummary = async (userId) => {
 };
 
 const getInternalUserByUsername = async (username) => {
-  const user = await User.findOne({ username }).select('username displayName avatarUrl bannerUrl isActive');
+  const user = await User.findOne({ username }).select(
+    'username displayName avatarUrl bannerUrl isActive'
+  );
   if (!user) {
     const err = new Error('User not found');
     err.status = 404;

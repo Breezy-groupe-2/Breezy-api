@@ -23,11 +23,11 @@ const getFeed = async (userId, { limit = 20 } = {}) => {
   }
 
   const authorIds = following.map((user) => user.id).join(',');
-  const posts = await fetchJson(`${postServiceUrl()}/api/v1/posts?authorIds=${authorIds}&limit=${limit}`);
+  const posts = await fetchJson(
+    `${postServiceUrl()}/api/v1/posts?authorIds=${authorIds}&limit=${limit}`
+  );
 
-  return posts
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, limit);
+  return posts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, limit);
 };
 
 module.exports = { getFeed };

@@ -6,12 +6,7 @@ const postContentSchema = z.object({
     .trim()
     .min(1, 'Content is required')
     .max(280, 'Content must be at most 280 characters'),
-  mediaUrl: z
-    .string()
-    .url('Invalid media URL format')
-    .trim()
-    .optional()
-    .nullable(),
+  mediaUrl: z.string().url('Invalid media URL format').trim().optional().nullable(),
   // Id of the post being quoted (quote repost). Plain reposts use a dedicated route.
   repostOf: z.string().optional().nullable(),
 });

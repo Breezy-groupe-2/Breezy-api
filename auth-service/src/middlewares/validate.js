@@ -50,7 +50,9 @@ const updatePreferencesSchema = z
     theme: z
       .object({
         mode: z.enum(['light', 'dark']),
-        accentColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Accent color must be a #RRGGBB hex color'),
+        accentColor: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/, 'Accent color must be a #RRGGBB hex color'),
       })
       .strict(),
   })

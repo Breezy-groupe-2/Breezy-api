@@ -699,8 +699,12 @@ describe.sequential('Breezy acceptance contract', () => {
         .set(authHeader(moderatorLogin.body.token))
         .send({ status: 'suspended', durationHours: 24, reason: 'Will expire' });
 
-      expect((await loginUser({ email: target.payload.email, password: target.payload.password })).status).toBe(403);
-      expect((await request(app).get('/api/v1/auth/me').set(authHeader(target.token))).status).toBe(403);
+      expect(
+        (await loginUser({ email: target.payload.email, password: target.payload.password })).status
+      ).toBe(403);
+      expect((await request(app).get('/api/v1/auth/me').set(authHeader(target.token))).status).toBe(
+        403
+      );
 
       await models.User.findByIdAndUpdate(target.user.id, {
         bannedUntil: new Date(Date.now() - 1000),
@@ -743,8 +747,12 @@ describe.sequential('Breezy acceptance contract', () => {
         bannedUntil: null,
       });
 
-      expect((await loginUser({ email: target.payload.email, password: target.payload.password })).status).toBe(403);
-      expect((await request(app).get('/api/v1/auth/me').set(authHeader(target.token))).status).toBe(403);
+      expect(
+        (await loginUser({ email: target.payload.email, password: target.payload.password })).status
+      ).toBe(403);
+      expect((await request(app).get('/api/v1/auth/me').set(authHeader(target.token))).status).toBe(
+        403
+      );
       expect((await createPost(target.token, 'Banned post attempt')).status).toBe(403);
 
       const storedTarget = await models.User.findById(target.user.id);
@@ -786,7 +794,9 @@ describe.sequential('Breezy acceptance contract', () => {
       expect(storedTarget.bannedUntil).toBeNull();
       expect(storedTarget.moderationHistory.some((entry) => entry.action === 'unban')).toBe(true);
 
-      expect((await loginUser({ email: target.payload.email, password: target.payload.password })).status).toBe(200);
+      expect(
+        (await loginUser({ email: target.payload.email, password: target.payload.password })).status
+      ).toBe(200);
     });
 
     it('allows an expired-suspension moderator to keep moderating because checkActive reactivates before requireRole', async () => {
@@ -798,7 +808,10 @@ describe.sequential('Breezy acceptance contract', () => {
       await models.User.findByIdAndUpdate(adminRegister.body.user.id, { role: 'admin' });
       await models.User.findByIdAndUpdate(moderatorRegister.body.user.id, { role: 'moderator' });
 
-      const adminLogin = await loginUser({ email: adminPayload.email, password: adminPayload.password });
+      const adminLogin = await loginUser({
+        email: adminPayload.email,
+        password: adminPayload.password,
+      });
       const moderatorLogin = await loginUser({
         email: moderatorPayload.email,
         password: moderatorPayload.password,

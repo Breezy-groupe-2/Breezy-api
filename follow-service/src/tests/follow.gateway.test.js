@@ -43,14 +43,22 @@ describe('gateway split-database follow behavior', () => {
         return {
           ok: true,
           status: 200,
-          json: async () => ({ id: followerId.toString(), username: 'gatewayFollower', isActive: true }),
+          json: async () => ({
+            id: followerId.toString(),
+            username: 'gatewayFollower',
+            isActive: true,
+          }),
         };
       }
       if (url.endsWith(`/internal/users/${followingId}`)) {
         return {
           ok: true,
           status: 200,
-          json: async () => ({ id: followingId.toString(), username: 'gatewayTarget', isActive: true }),
+          json: async () => ({
+            id: followingId.toString(),
+            username: 'gatewayTarget',
+            isActive: true,
+          }),
         };
       }
       return { ok: false, status: 404, json: async () => ({ error: 'User not found' }) };

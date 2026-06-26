@@ -137,7 +137,10 @@ const recordRoute = async (name, method, urlPath, options, expect) => {
   return { entry, body, status };
 };
 
-const expectStatus = (...statuses) => ({ status, error }) => !error && statuses.includes(status);
+const expectStatus =
+  (...statuses) =>
+  ({ status, error }) =>
+    !error && statuses.includes(status);
 
 const waitForGateway = async () => {
   const deadline = Date.now() + Number(process.env.GATEWAY_SMOKE_READY_TIMEOUT_MS ?? 120000);
@@ -149,7 +152,7 @@ const waitForGateway = async () => {
       'GET',
       '/health',
       {},
-      expectStatus(200),
+      expectStatus(200)
     );
     if (result.entry.pass) return;
     result.entry.critical = false;
@@ -193,7 +196,7 @@ const registerAndLogin = async (suffix, runId) => {
     'POST',
     '/api/v1/auth/register',
     { body: JSON.stringify(payload) },
-    expectStatus(201),
+    expectStatus(201)
   );
   const registered = assertRoute(registerResult, `Register ${suffix} failed`);
   const loginResult = await recordRoute(
@@ -201,7 +204,7 @@ const registerAndLogin = async (suffix, runId) => {
     'POST',
     '/api/v1/auth/login',
     { body: JSON.stringify({ email: payload.email, password: payload.password }) },
-    expectStatus(200),
+    expectStatus(200)
   );
   const loggedIn = assertRoute(loginResult, `Login ${suffix} failed`);
   return {
@@ -228,7 +231,7 @@ const runHttpSmoke = async () => {
         avatarUrl: 'https://example.com/breezy-smoke.png',
       }),
     },
-    expectStatus(200),
+    expectStatus(200)
   );
   assertRoute(profileUpdate, 'Profile update failed');
 
@@ -237,7 +240,8 @@ const runHttpSmoke = async () => {
     'GET',
     `/api/v1/users/${author.user.id}`,
     {},
-    ({ status, body, error }) => !error && status === 200 && body.json?.avatarUrl === 'https://example.com/breezy-smoke.png',
+    ({ status, body, error }) =>
+      !error && status === 200 && body.json?.avatarUrl === 'https://example.com/breezy-smoke.png'
   );
   assertRoute(profileRead, 'Profile read failed');
 
@@ -249,7 +253,7 @@ const runHttpSmoke = async () => {
       headers: bearer(author.token),
       body: JSON.stringify({ content: `Gateway smoke post ${runId}` }),
     },
-    expectStatus(201),
+    expectStatus(201)
   );
   const post = assertRoute(postCreate, 'Post creation failed');
 
@@ -261,7 +265,7 @@ const runHttpSmoke = async () => {
       headers: bearer(reader.token),
       body: JSON.stringify({ content: `Gateway smoke comment ${runId}` }),
     },
-    expectStatus(201),
+    expectStatus(201)
   );
   assertRoute(commentCreate, 'Comment creation failed');
 
@@ -270,7 +274,7 @@ const runHttpSmoke = async () => {
     'GET',
     `/api/v1/posts/${post.id}/comments`,
     {},
-    ({ status, body, error }) => !error && status === 200 && Array.isArray(body.json),
+    ({ status, body, error }) => !error && status === 200 && Array.isArray(body.json)
   );
   assertRoute(commentsRead, 'Comments read failed');
 
@@ -279,7 +283,7 @@ const runHttpSmoke = async () => {
     'POST',
     `/api/v1/users/${author.user.id}/follow`,
     { headers: bearer(reader.token) },
-    expectStatus(200),
+    expectStatus(200)
   );
   assertRoute(follow, 'Follow failed');
 
@@ -288,7 +292,7 @@ const runHttpSmoke = async () => {
     'GET',
     `/api/v1/users/${reader.user.id}/following`,
     {},
-    ({ status, body, error }) => !error && status === 200 && Array.isArray(body.json),
+    ({ status, body, error }) => !error && status === 200 && Array.isArray(body.json)
   );
   assertRoute(following, 'Following read failed');
 
@@ -298,7 +302,10 @@ const runHttpSmoke = async () => {
     '/api/v1/feed?limit=10',
     { headers: bearer(reader.token) },
     ({ status, body, error }) =>
-      !error && status === 200 && Array.isArray(body.json) && body.json.some((item) => item.id === post.id),
+      !error &&
+      status === 200 &&
+      Array.isArray(body.json) &&
+      body.json.some((item) => item.id === post.id)
   );
   assertRoute(feed, 'Feed read failed');
 
@@ -308,7 +315,9 @@ const runHttpSmoke = async () => {
     '/api-docs',
     {},
     ({ status, body, error }) =>
-      !error && (status === 200 || status === 301 || status === 302) && String(body.text ?? '').length >= 0,
+      !error &&
+      (status === 200 || status === 301 || status === 302) &&
+      String(body.text ?? '').length >= 0
   );
   assertRoute(docs, 'API docs route failed');
 
@@ -317,7 +326,7 @@ const runHttpSmoke = async () => {
     'GET',
     '/api/v1/does-not-exist',
     {},
-    expectStatus(404),
+    expectStatus(404)
   );
   assertRoute(missing, 'Missing route did not return 404');
 };
@@ -343,8 +352,19 @@ const main = async () => {
     const down = runCompose('compose down', 'down', '--remove-orphans');
     cleanup.push({ action: 'down --remove-orphans', pass: down.pass });
 
-    const ps = runDocker('post-clean docker ps', 'ps', '--filter', `name=${project}`, '--format', '{{.Names}}');
-    cleanup.push({ action: 'docker ps empty check', output: ps.stdout.trim(), pass: ps.pass && ps.stdout.trim() === '' });
+    const ps = runDocker(
+      'post-clean docker ps',
+      'ps',
+      '--filter',
+      `name=${project}`,
+      '--format',
+      '{{.Names}}'
+    );
+    cleanup.push({
+      action: 'docker ps empty check',
+      output: ps.stdout.trim(),
+      pass: ps.pass && ps.stdout.trim() === '',
+    });
 
     if (cleanup.some((item) => item.pass === false)) {
       overallPass = false;

@@ -113,9 +113,13 @@ describe('follow routes', () => {
   });
 
   it('returns 401 for expired tokens', async () => {
-    const expiredToken = jwt.sign({ sub: userA._id.toString(), role: userA.role }, process.env.JWT_SECRET, {
-      expiresIn: '-1s',
-    });
+    const expiredToken = jwt.sign(
+      { sub: userA._id.toString(), role: userA.role },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: '-1s',
+      }
+    );
 
     const res = await request(app)
       .post(`/api/v1/users/${userB._id}/follow`)
@@ -124,18 +128,29 @@ describe('follow routes', () => {
     expect(res.status).toBe(401);
   });
 
-  it.each(['inactive', 'banned', 'suspended'])('returns 403 when auth-service marks user %s', async () => {
-    global.fetch = async () => ({ ok: false, status: 403, json: async () => ({ error: 'Forbidden' }) });
+  it.each(['inactive', 'banned', 'suspended'])(
+    'returns 403 when auth-service marks user %s',
+    async () => {
+      global.fetch = async () => ({
+        ok: false,
+        status: 403,
+        json: async () => ({ error: 'Forbidden' }),
+      });
 
-    const res = await request(app)
-      .post(`/api/v1/users/${userB._id}/follow`)
-      .set('Authorization', `Bearer ${tokenA}`);
+      const res = await request(app)
+        .post(`/api/v1/users/${userB._id}/follow`)
+        .set('Authorization', `Bearer ${tokenA}`);
 
-    expect(res.status).toBe(403);
-  });
+      expect(res.status).toBe(403);
+    }
+  );
 
   it('returns 404 when auth-service cannot find the authenticated user', async () => {
-    global.fetch = async () => ({ ok: false, status: 404, json: async () => ({ error: 'User not found' }) });
+    global.fetch = async () => ({
+      ok: false,
+      status: 404,
+      json: async () => ({ error: 'User not found' }),
+    });
 
     const res = await request(app)
       .post(`/api/v1/users/${userB._id}/follow`)
@@ -146,7 +161,10 @@ describe('follow routes', () => {
 
   it.each([
     ['network rejection', async () => Promise.reject(new Error('network down'))],
-    ['auth-service 5xx', async () => ({ ok: false, status: 503, json: async () => ({ error: 'down' }) })],
+    [
+      'auth-service 5xx',
+      async () => ({ ok: false, status: 503, json: async () => ({ error: 'down' }) }),
+    ],
   ])('returns 502 when auth-service active verification has %s', async (_caseName, fetchImpl) => {
     global.fetch = fetchImpl;
 

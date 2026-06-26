@@ -78,7 +78,11 @@ describe('POST /api/v1/posts/:postId/comments', () => {
   });
 
   it.each([403, 404])('returns %s from auth-service active verification', async (status) => {
-    global.fetch = async () => ({ ok: false, status, json: async () => ({ error: 'auth failed' }) });
+    global.fetch = async () => ({
+      ok: false,
+      status,
+      json: async () => ({ error: 'auth failed' }),
+    });
 
     const res = await request(app)
       .post(`/api/v1/posts/${postId}/comments`)
@@ -90,7 +94,10 @@ describe('POST /api/v1/posts/:postId/comments', () => {
 
   it.each([
     ['network rejection', async () => Promise.reject(new Error('network down'))],
-    ['auth-service 5xx', async () => ({ ok: false, status: 503, json: async () => ({ error: 'down' }) })],
+    [
+      'auth-service 5xx',
+      async () => ({ ok: false, status: 503, json: async () => ({ error: 'down' }) }),
+    ],
   ])('returns 502 when auth-service active verification has %s', async (_caseName, fetchImpl) => {
     global.fetch = fetchImpl;
 
